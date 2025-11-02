@@ -1,0 +1,14 @@
+# Build outputs
+dist/
+
+# Vite
+.vite/
+storybook/.storybook/
+# Dependencies (inherited from root)
+node_modules/
+
+# Logs
+*.log
+
+.idea
+

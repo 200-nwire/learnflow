@@ -1,0 +1,11 @@
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Dependencies (inherited from root)
+node_modules/
+

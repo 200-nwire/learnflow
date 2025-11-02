@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnpm-debug.log
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+.tmp/
+.cache/
+.temp/
+*.tmp
+
+# Storybook
+storybook-static/
+
+# Vite
+.vite/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Package manager
+.pnpm-debug.log
+
+# TypeScript
+*.tsbuildinfo
+

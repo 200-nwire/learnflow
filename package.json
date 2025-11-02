@@ -1,0 +1,14 @@
+{
+  "name": "@amit/adaptivity-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "pnpm -C packages/adaptivity build",
+    "test": "pnpm -C packages/adaptivity test",
+    "dev:play": "pnpm -C playground dev",
+    "dev:storybook": "pnpm -C storybook storybook"
+  },
+  "dependencies": {
+    "@amit/adaptivity": "link:packages\\adaptivity"
+  }
+}
