@@ -75,15 +75,15 @@
           <div v-if="['accuracy', 'engagement'].includes(selectedFact.name)" class="space-y-1">
             <div class="flex items-center gap-2">
               <Slider
-                :modelValue="condition.value"
+                :modelValue="sliderValue"
                 @update:modelValue="handleValueChange"
                 :min="0"
                 :max="1"
                 :step="0.01"
-                class="flex-1"
+                class="flex-1 custom-slider"
               />
               <InputNumber
-                :modelValue="condition.value"
+                :modelValue="sliderValue"
                 @update:modelValue="handleValueChange"
                 :min="0"
                 :max="1"
@@ -95,7 +95,7 @@
               />
             </div>
             <div class="text-xs text-gray-500 text-center">
-              {{ (condition.value * 100).toFixed(0) }}%
+              {{ (sliderValue * 100).toFixed(0) }}%
             </div>
           </div>
           
@@ -183,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
@@ -219,6 +219,27 @@ const availableOperators = computed(() => {
   
   const operators = props.config.operators || defaultOperators;
   return getOperatorsForType(selectedFact.value.type, operators);
+});
+
+// Slider value - ensure it's always a valid number
+const sliderValue = computed(() => {
+  const val = Number(props.condition.value);
+  // If invalid, show 0.5 but don't auto-update (let user drag)
+  if (isNaN(val) || props.condition.value === null || props.condition.value === undefined || props.condition.value === '') {
+    return 0.5;
+  }
+  // Allow 0 as a valid value (user might want exactly 0)
+  return val;
+});
+
+// Fix slider value on mount if needed
+onMounted(() => {
+  if (selectedFact.value && ['accuracy', 'engagement'].includes(selectedFact.value.name)) {
+    const val = Number(props.condition.value);
+    if (isNaN(val) || props.condition.value === null || props.condition.value === undefined || props.condition.value === '') {
+      handleValueChange(0.5);
+    }
+  }
 });
 
 const conditionPreview = computed(() => {
@@ -361,6 +382,22 @@ const handleValueChange = (value: any) => {
   .remove-btn {
     margin-top: 0.5rem;
   }
+}
+
+/* Custom slider styling - blue handle */
+.custom-slider :deep(.p-slider-handle) {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+}
+
+.custom-slider :deep(.p-slider-handle:hover) {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+.custom-slider :deep(.p-slider-range) {
+  background: #3b82f6 !important;
 }
 </style>
 
