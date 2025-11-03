@@ -15,11 +15,19 @@
         <!-- Center: Navigation Tabs -->
         <div class="flex items-center gap-2">
           <Button 
+            label="Variants Editor"
+            icon="pi pi-th-large"
+            :severity="$route.name === 'variants' ? 'info' : 'secondary'"
+            :text="$route.name !== 'variants'"
+            @click="$router.push('/')"
+            class="nav-button"
+          />
+          <Button 
             label="Session Simulator"
             icon="pi pi-sliders-h"
             :severity="$route.name === 'session' ? 'info' : 'secondary'"
             :text="$route.name !== 'session'"
-            @click="$router.push('/')"
+            @click="$router.push('/session')"
             class="nav-button"
           />
           <Button 
