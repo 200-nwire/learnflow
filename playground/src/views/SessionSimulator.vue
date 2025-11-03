@@ -1,10 +1,10 @@
 <template>
-  <div class="session-simulator h-screen flex flex-col overflow-hidden">
+  <div class="session-simulator">
     <!-- Main Content -->
-    <div class="main-content flex-1 overflow-hidden">
-      <div class="h-full grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="main-content">
+      <div class="content-grid">
         <!-- Left Column: Page Navigation -->
-        <div class="xl:col-span-2 space-y-6 overflow-y-auto pr-2">
+        <div class="left-column">
           <!-- Info Bubble Button -->
           <div class="flex justify-between items-center">
             <h2 class="text-xl font-semibold text-gray-800">Adaptive Content Simulator</h2>
@@ -39,7 +39,7 @@
         </div>
 
         <!-- Right Column: Overview, Monitoring & Controls -->
-        <div class="space-y-6 overflow-y-auto pr-2">
+        <div class="right-column">
           <!-- Session Overview -->
           <Card>
             <template #title>
@@ -607,10 +607,47 @@ defineExpose({ session, settingsVisible });
 <style scoped>
 .session-simulator {
   height: calc(100vh - 105px); /* Account for header */
+  overflow: hidden; /* No main scroll */
 }
 
 .main-content {
   @apply container mx-auto px-6 py-6;
+  height: 100%;
+  overflow: hidden; /* No main content scroll */
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  height: 100%;
+  overflow: hidden;
+}
+
+@media (min-width: 1280px) {
+  .content-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5rem;
+  height: 100%;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5rem;
+  height: 100%;
 }
 
 .stat {
