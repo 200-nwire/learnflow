@@ -1,10 +1,24 @@
 <template>
-  <div class="session-simulator">
+  <div class="session-simulator h-screen flex flex-col overflow-hidden">
     <!-- Main Content -->
-    <div class="main-content">
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <!-- Left Column: Page Navigation & Content -->
-        <div class="xl:col-span-2 space-y-6">
+    <div class="main-content flex-1 overflow-hidden">
+      <div class="h-full grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Left Column: Page Navigation -->
+        <div class="xl:col-span-2 space-y-6 overflow-y-auto pr-2">
+          <!-- Info Bubble Button -->
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-800">Adaptive Content Simulator</h2>
+            <Button
+              icon="pi pi-question-circle"
+              @click="showHelpDialog = true"
+              rounded
+              outlined
+              severity="info"
+              v-tooltip.left="'How this works'"
+              class="help-button"
+            />
+          </div>
+
           <!-- Page Navigation -->
           <PageNavigation 
             :pages="pages" 
@@ -22,7 +36,10 @@
               />
             </div>
           </PageNavigation>
+        </div>
 
+        <!-- Right Column: Overview, Monitoring & Controls -->
+        <div class="space-y-6 overflow-y-auto pr-2">
           <!-- Session Overview -->
           <Card>
             <template #title>
@@ -32,7 +49,7 @@
               </div>
             </template>
             <template #content>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="grid grid-cols-2 gap-4">
                 <div class="stat">
                   <div class="text-2xl font-bold text-blue-600">{{ (session.metrics.accEWMA * 100).toFixed(0) }}%</div>
                   <div class="text-xs text-gray-600">Accuracy</div>
@@ -52,12 +69,6 @@
               </div>
             </template>
           </Card>
-        </div>
-
-        <!-- Right Column: Controls & Monitoring -->
-        <div class="space-y-6">
-          <!-- Event Dispatcher -->
-          <EventDispatcher @event="handleEvent" />
 
           <!-- Signal Monitor -->
           <SignalMonitor 
@@ -66,6 +77,9 @@
             @refresh="refreshWorkerStats"
             @clear-synced="clearOldSignals"
           />
+
+          <!-- Event Dispatcher -->
+          <EventDispatcher @event="handleEvent" />
 
           <!-- Quick Actions -->
           <Card>
@@ -89,7 +103,7 @@
                   label="Clear Sticky Choices" 
                   icon="pi pi-unlock"
                   @click="clearSticky"
-                  severity="warning"
+                  severity="warn"
                   outlined
                   class="w-full"
                 />
@@ -113,6 +127,73 @@
       :session="session"
       @update:session="updateSession"
     />
+
+    <!-- Help Dialog -->
+    <Dialog
+      v-model:visible="showHelpDialog"
+      header="Adaptive Content Simulator"
+      :modal="true"
+      :dismissableMask="true"
+      :style="{ width: '600px' }"
+      class="help-dialog"
+    >
+      <div class="space-y-4 text-sm">
+        <div>
+          <h4 class="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+            <i class="pi pi-eye text-blue-600"></i>
+            What You're Seeing
+          </h4>
+          <p class="text-gray-700 leading-relaxed">
+            This simulator demonstrates a <strong>personalized learning engine</strong> that adapts content 
+            in real-time based on student performance and context. Each "block" on a page can have multiple 
+            <strong>variants</strong> (easy, standard, hard), and the engine automatically selects the best 
+            variant for each learner.
+          </p>
+        </div>
+
+        <Divider />
+
+        <div>
+          <h4 class="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+            <i class="pi pi-cog text-blue-600"></i>
+            How to Use
+          </h4>
+          <ul class="space-y-2 text-gray-700">
+            <li class="flex items-start gap-2">
+              <i class="pi pi-angle-right text-blue-500 mt-0.5"></i>
+              <span><strong>Navigate pages</strong> using the Previous/Next buttons or page selector</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="pi pi-angle-right text-blue-500 mt-0.5"></i>
+              <span><strong>Trigger events</strong> (answer submissions, time spent) to update session metrics</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="pi pi-angle-right text-blue-500 mt-0.5"></i>
+              <span><strong>Watch variants change</strong> as accuracy and engagement shift</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="pi pi-angle-right text-blue-500 mt-0.5"></i>
+              <span><strong>Test sticky behavior</strong> by revisiting pages to see consistent choices</span>
+            </li>
+          </ul>
+        </div>
+
+        <Divider />
+
+        <div>
+          <h4 class="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+            <i class="pi pi-star text-blue-600"></i>
+            Why This Matters
+          </h4>
+          <p class="text-gray-700 leading-relaxed">
+            Traditional e-learning shows the same content to everyone. This engine enables 
+            <strong>truly personalized learning paths</strong> where content difficulty, modality, and 
+            presentation adapt to each student's unique needs, performance, and preferences — creating 
+            more effective and engaging learning experiences.
+          </p>
+        </div>
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -121,6 +202,8 @@ import { ref, computed, onMounted, inject } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
+import Dialog from 'primevue/dialog';
+import Divider from 'primevue/divider';
 import { 
   createSnapshot, 
   selectVariant, 
@@ -188,6 +271,7 @@ const session = ref<SessionSnapshot>(createSnapshot({
 
 const selections = ref<Record<string, SelectionResult>>({});
 const workerStats = ref<any>(null);
+const showHelpDialog = ref(false);
 const signalFactory = new SignalFactory();
 
 // Policy
@@ -468,7 +552,7 @@ const clearSticky = () => {
   initializeSelections();
   
   toast.add({
-    severity: 'warning',
+    severity: 'warn',
     summary: 'Sticky Cleared',
     detail: 'All sticky choices removed',
     life: 2000,
@@ -522,15 +606,38 @@ defineExpose({ session, settingsVisible });
 
 <style scoped>
 .session-simulator {
-  @apply min-h-screen;
+  height: calc(100vh - 105px); /* Account for header */
 }
 
 .main-content {
-  @apply container mx-auto px-6 pb-6;
+  @apply container mx-auto px-6 py-6;
 }
 
 .stat {
   @apply text-center p-3 bg-gray-50 rounded-lg border border-gray-200;
+}
+
+.help-button {
+  width: 40px;
+  height: 40px;
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+.help-button:hover {
+  animation: none;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}
+
+:deep(.help-dialog .p-dialog-content) {
+  padding: 1.5rem;
 }
 </style>
 
