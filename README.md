@@ -183,9 +183,34 @@ Open [http://localhost:6006](http://localhost:6006)
 pnpm test
 ```
 
+## 🎮 Dual Simulator Interface
+
+The playground includes **two powerful simulators**:
+
+### 1. **Session Simulator** (Route: `/`)
+Test adaptive content selection at the page level:
+- Adjust session parameters in real-time
+- Dispatch learning events
+- Watch variants adapt instantly
+- Monitor signal tracking
+- Test sticky behavior across pages
+
+### 2. **Flow Simulator** (Route: `/flow`) ✨ NEW!
+Visualize and simulate complete learning paths:
+- **Visual flow graph** with nodes and conditional edges
+- **Branching logic** based on track, performance, engagement
+- **Student journey simulation** step-by-step
+- **Path replay** with decision tracking
+- **Rule testing** with configurable context
+- Inspired by visual course builders
+
+---
+
 ## 🎮 Playground Walkthrough
 
-### Scenario 1: Struggling Learner
+### Session Simulator
+
+#### Scenario 1: Struggling Learner
 
 1. Open Settings Drawer
 2. Set Accuracy to 45%
@@ -228,6 +253,46 @@ pnpm test
 4. Observe signals marked as synced
 
 **Result**: Signals flow to IndexedDB and sync to mock API
+
+---
+
+### Flow Simulator ✨ NEW!
+
+#### Scenario 1: Track-Based Branching
+
+1. Open Flow Simulator tab
+2. Set Track to "Project" in left sidebar
+3. Click "Start Simulation"
+4. Click "Step Forward"
+
+**Result**: Student follows project track branch (P1 → P2 → P3a → P4)
+
+#### Scenario 2: Performance-Based Skip
+
+1. Set Track to "Core"
+2. Set Accuracy to 90%
+3. Start Simulation
+4. Step Forward from P2
+
+**Result**: High performer skips optional content (P1 → P2 → P4)
+
+#### Scenario 3: Enrichment Path
+
+1. Set Track to "Enrichment"
+2. Set Engagement to 75%
+3. Start Simulation
+4. Step through path
+
+**Result**: Engaged student gets enrichment content (P1 → P2 → P3b → P4)
+
+#### Scenario 4: Path Replay
+
+1. Complete any simulation
+2. View right sidebar
+3. See step-by-step journey
+4. Click "Export Path"
+
+**Result**: Complete path exported with decisions and statistics
 
 ## 🏗️ Architecture
 

@@ -3,7 +3,7 @@ dist/
 
 # Vite
 .vite/
-storybook/.storybook/
+
 # Dependencies (inherited from root)
 node_modules/
 
