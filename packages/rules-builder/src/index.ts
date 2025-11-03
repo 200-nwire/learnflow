@@ -1,8 +1,3 @@
-// Components
-export { default as RuleBuilder } from './components/RuleBuilder.vue';
-export { default as RuleGroupNode } from './components/RuleGroupNode.vue';
-export { default as RuleConditionNode } from './components/RuleConditionNode.vue';
-
 // Composables
 export { useRuleBuilder } from './composables/useRuleBuilder';
 export { useRuleEngine } from './composables/useRuleEngine';
@@ -23,4 +18,8 @@ export type {
 
 // Utilities
 export { defaultOperators, getOperatorsForType } from './operators';
+
+// Note: Vue components are available in src/components/ directory
+// Import them directly in your Vue app:
+// import RuleBuilder from '@amit/rules-builder/src/components/RuleBuilder.vue'
 

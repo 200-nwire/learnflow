@@ -19,7 +19,14 @@ export function useRuleEngine() {
     
     try {
       const engine = new Engine();
-      engine.addRule(rule);
+      // Convert our rule format to json-rules-engine format
+      const engineRule = {
+        conditions: rule.conditions as any,
+        event: rule.event as any,
+        priority: rule.priority,
+        name: rule.name,
+      };
+      engine.addRule(engineRule);
 
       const { events, results } = await engine.run(facts);
 
@@ -53,7 +60,15 @@ export function useRuleEngine() {
     
     try {
       const engine = new Engine();
-      rules.forEach(r => engine.addRule(r));
+      rules.forEach(r => {
+        const engineRule = {
+          conditions: r.conditions as any,
+          event: r.event as any,
+          priority: r.priority,
+          name: r.name,
+        };
+        engine.addRule(engineRule);
+      });
 
       const { events, results } = await engine.run(facts);
 

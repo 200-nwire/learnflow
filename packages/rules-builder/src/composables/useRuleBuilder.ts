@@ -99,7 +99,7 @@ export function useRuleBuilder(config: RuleBuilderConfig) {
       [operator]: [],
     };
 
-    const children = parent.all || parent.any || [];
+    const children = (parent.all || parent.any || []) as Array<RuleCondition | RuleGroup>;
     children.push(newGroup);
   };
 
