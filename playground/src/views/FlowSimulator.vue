@@ -38,7 +38,7 @@
           <MiniMap />
           
           <Panel :position="PanelPosition.TopRight" class="flow-panel">
-            <div class="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+            <div class="bg-white p-4 rounded-lg shadow-lg border border-gray-200 w-72">
               <div class="flex items-center gap-2 mb-3">
                 <i class="pi pi-info-circle text-blue-500"></i>
                 <span class="font-semibold">Path Simulation</span>
@@ -47,48 +47,69 @@
                 <!-- Layout Switcher -->
                 <div class="space-y-2">
                   <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Layout View</label>
-                  <div class="flex gap-1 p-1 bg-gray-100 rounded-lg">
-                    <Button
-                      :icon="'pi pi-sitemap'"
-                      @click="setLayoutMode('flow')"
-                      :severity="layoutMode === 'flow' ? 'info' : 'secondary'"
-                      :outlined="layoutMode !== 'flow'"
-                      :text="layoutMode !== 'flow'"
-                      size="small"
-                      class="flex-1"
-                      v-tooltip.bottom="'Flow Graph'"
-                    >
-                      <span class="hidden sm:inline">Flow</span>
-                    </Button>
-                    <Button
-                      :icon="'pi pi-bars'"
+                  <div class="grid grid-cols-2 gap-2.5 p-2.5 bg-white rounded-lg border border-gray-200">
+                    <!-- Top Row: Current Paradigm -->
+                    <button
                       @click="setLayoutMode('linear')"
-                      :severity="layoutMode === 'linear' ? 'info' : 'secondary'"
-                      :outlined="layoutMode !== 'linear'"
-                      :text="layoutMode !== 'linear'"
-                      size="small"
-                      class="flex-1"
-                      v-tooltip.bottom="'Track Groups'"
+                      v-tooltip.bottom="'Page-by-page authoring view'"
+                      class="layout-btn flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md border-2 transition-all"
+                      :class="layoutMode === 'linear' 
+                        ? 'bg-blue-50 border-blue-500 text-blue-700' 
+                        : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'"
                     >
-                      <span class="hidden sm:inline">Track</span>
-                    </Button>
-                    <Button
-                      :icon="'pi pi-sort-numeric-up'"
+                      <i class="pi pi-bars text-xs"></i>
+                      <span class="text-xs font-medium whitespace-nowrap">Pages</span>
+                      <i v-if="layoutMode === 'linear'" class="pi pi-check text-xs ml-auto"></i>
+                    </button>
+                    <button
                       @click="setLayoutMode('sequential')"
-                      :severity="layoutMode === 'sequential' ? 'info' : 'secondary'"
-                      :outlined="layoutMode !== 'sequential'"
-                      :text="layoutMode !== 'sequential'"
-                      size="small"
-                      class="flex-1"
-                      v-tooltip.bottom="'Page Order'"
+                      v-tooltip.bottom="'Skills-based sequence view'"
+                      class="layout-btn flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md border-2 transition-all"
+                      :class="layoutMode === 'sequential' 
+                        ? 'bg-green-50 border-green-500 text-green-700' 
+                        : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'"
                     >
-                      <span class="hidden sm:inline">Order</span>
-                    </Button>
+                      <i class="pi pi-sort-amount-down text-xs"></i>
+                      <span class="text-xs font-medium whitespace-nowrap">Skills</span>
+                      <i v-if="layoutMode === 'sequential'" class="pi pi-check text-xs ml-auto"></i>
+                    </button>
+                    
+                    <!-- Bottom Row: Visual Representations -->
+                    <button
+                      @click="setLayoutMode('flow')"
+                      v-tooltip.bottom="'Flow view with connections'"
+                      class="layout-btn flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md border-2 transition-all"
+                      :class="layoutMode === 'flow' 
+                        ? 'bg-blue-50 border-blue-500 text-blue-700' 
+                        : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'"
+                    >
+                      <i class="pi pi-sitemap text-xs"></i>
+                      <span class="text-xs font-medium whitespace-nowrap">Flow</span>
+                      <i v-if="layoutMode === 'flow'" class="pi pi-check text-xs ml-auto"></i>
+                    </button>
+                    <button
+                      @click="setLayoutMode('cluster')"
+                      v-tooltip.bottom="'Learning path clusters'"
+                      class="layout-btn flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md border-2 transition-all"
+                      :class="layoutMode === 'cluster' 
+                        ? 'bg-green-50 border-green-500 text-green-700' 
+                        : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'"
+                    >
+                      <i class="pi pi-objects-column text-xs"></i>
+                      <span class="text-xs font-medium whitespace-nowrap">Path</span>
+                      <i v-if="layoutMode === 'cluster'" class="pi pi-check text-xs ml-auto"></i>
+                    </button>
                   </div>
-                  <div class="text-xs text-gray-500 text-center px-1">
-                    {{ layoutMode === 'flow' ? '📊 Graph with connections' : 
-                       layoutMode === 'linear' ? '📚 Grouped by tracks' : 
-                       '🔢 Sequential order' }}
+                  <div class="text-xs text-center px-1 min-h-[32px] flex items-center justify-center">
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
+                      <i class="pi pi-check-circle text-xs flex-shrink-0"></i>
+                      <span class="whitespace-nowrap">
+                        {{ layoutMode === 'flow' ? 'Connected flow' : 
+                           layoutMode === 'cluster' ? 'Learning paths' :
+                           layoutMode === 'linear' ? 'Page authoring' : 
+                           'Skills sequence' }}
+                      </span>
+                    </span>
                   </div>
                 </div>
                 
@@ -333,11 +354,11 @@ const selectedNode = ref<any>(null);
 const simulationPath = ref<string[]>(['P1']);
 const currentStep = ref(0);
 const pathDecisions = ref<Array<{ fromPage: string; toPage: string; reason: string }>>([]);
-const layoutMode = ref<'flow' | 'linear' | 'sequential'>('linear');
+const layoutMode = ref<'flow' | 'linear' | 'sequential' | 'cluster'>('linear');
 
 // All nodes including track groups and pages
 const allNodes = computed(() => {
-  const result = [...nodes.value];
+  let result = [...nodes.value];
   
   // Add track group nodes in linear mode
   if (layoutMode.value === 'linear') {
@@ -349,6 +370,12 @@ const allNodes = computed(() => {
   if (layoutMode.value === 'sequential') {
     const trackGroupNodes = createSequentialTrackGroupNodes();
     result.unshift(...trackGroupNodes); // Add at beginning (behind pages)
+  }
+  
+  // In cluster mode, show track groups as main nodes with pages inside
+  if (layoutMode.value === 'cluster') {
+    const clusterNodes = createClusterNodes();
+    result = [...nodes.value, ...clusterNodes];
   }
   
   return result;
@@ -406,6 +433,423 @@ const calculateNodeHeight = (nodeData: any): number => {
   height += 20;
   
   return height;
+};
+
+// Create cluster nodes and edges for cluster mode
+const createClusterNodes = () => {
+  const trackInfo = {
+    core: { color: '#3b82f6', label: 'Core Track' },
+    remedial: { color: '#ef4444', label: 'Remedial Track' },
+    project: { color: '#8b5cf6', label: 'Project Track' },
+    enrichment: { color: '#10b981', label: 'Enrichment Track' },
+  };
+  
+  // Create clusters based on consecutive sequences (same logic as layout)
+  const sortedNodes = [...nodes.value].sort((a, b) => {
+    const numA = parseInt(a.id.replace('P', ''));
+    const numB = parseInt(b.id.replace('P', ''));
+    return numA - numB;
+  });
+
+  const trackSegments: Array<{ track: string; segmentId: string; nodes: any[] }> = [];
+  let currentSegment: { track: string; segmentId: string; nodes: any[] } | null = null;
+  let coreSegmentIndex = 0;
+
+  sortedNodes.forEach(node => {
+    const track = node.data.track || 'core';
+    
+    if (!currentSegment || currentSegment.track !== track) {
+      if (currentSegment) {
+        trackSegments.push(currentSegment);
+      }
+      
+      const segmentId = track === 'core' 
+        ? `core-${++coreSegmentIndex}` 
+        : track;
+        
+      currentSegment = { track, segmentId, nodes: [node] };
+    } else {
+      currentSegment.nodes.push(node);
+    }
+  });
+  
+  if (currentSegment) {
+    trackSegments.push(currentSegment);
+  }
+  
+  // Create cluster nodes for each segment
+  return trackSegments.map(segment => {
+    const { track, segmentId, nodes: trackNodes } = segment;
+    const info = trackInfo[track as keyof typeof trackInfo] || { color: '#666', label: track };
+    
+    // Calculate bounds from actual page positions
+    const positions = trackNodes.map(n => n.position);
+    const xs = positions.map(p => p.x);
+    const ys = positions.map(p => p.y);
+    
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    
+    const pageWidth = 220;
+    const pageHeight = 180;
+    const pageSpacingY = 30;
+    const padding = 60;
+    
+    // Single column vertical layout
+    const groupWidth = pageWidth + (padding * 2);
+    const groupHeight = (trackNodes.length * pageHeight) + ((trackNodes.length - 1) * pageSpacingY) + (padding * 2);
+    
+    // Create label with segment info
+    const label = track === 'core' && coreSegmentIndex > 1
+      ? `${info.label} (Part ${segmentId.split('-')[1]})`
+      : info.label;
+    
+    return {
+      id: `cluster-${segmentId}`,
+      type: 'trackGroup',
+      position: {
+        x: minX - padding,
+        y: minY - padding,
+      },
+      data: {
+        track,
+        label,
+        color: info.color,
+        width: groupWidth,
+        height: groupHeight,
+        pageCount: trackNodes.length,
+      },
+      draggable: true,
+      selectable: true,
+      zIndex: -1,
+    };
+  });
+};
+
+// Cluster edges - connections between track groups
+const clusterEdges = computed(() => {
+  // Sort nodes to create segments (same logic as createClusterNodes)
+  const sortedNodes = [...nodes.value].sort((a, b) => {
+    const numA = parseInt(a.id.replace('P', ''));
+    const numB = parseInt(b.id.replace('P', ''));
+    return numA - numB;
+  });
+
+  const trackSegments: Array<{ track: string; segmentId: string; nodes: any[] }> = [];
+  let currentSegment: { track: string; segmentId: string; nodes: any[] } | null = null;
+  let coreSegmentIndex = 0;
+
+  sortedNodes.forEach(node => {
+    const track = node.data.track || 'core';
+    
+    if (!currentSegment || currentSegment.track !== track) {
+      if (currentSegment) {
+        trackSegments.push(currentSegment);
+      }
+      
+      const segmentId = track === 'core' 
+        ? `core-${++coreSegmentIndex}` 
+        : track;
+        
+      currentSegment = { track, segmentId, nodes: [node] };
+    } else {
+      currentSegment.nodes.push(node);
+    }
+  });
+  
+  if (currentSegment) {
+    trackSegments.push(currentSegment);
+  }
+
+  // Create page to segment mapping
+  const pageToSegment = new Map<string, string>();
+  trackSegments.forEach(segment => {
+    segment.nodes.forEach(node => {
+      pageToSegment.set(node.id, segment.segmentId);
+    });
+  });
+
+  // Build segment-to-segment connections based on page edges
+  const segmentConnections = new Map<string, Set<string>>();
+  
+  edges.value.forEach(edge => {
+    const sourceSegment = pageToSegment.get(edge.source);
+    const targetSegment = pageToSegment.get(edge.target);
+    
+    if (sourceSegment && targetSegment && sourceSegment !== targetSegment) {
+      if (!segmentConnections.has(sourceSegment)) {
+        segmentConnections.set(sourceSegment, new Set());
+      }
+      segmentConnections.get(sourceSegment)!.add(targetSegment);
+    }
+  });
+  
+  // Create cluster edges with visual styling based on importance
+  const clusterEdgesList: any[] = [];
+  segmentConnections.forEach((targets, source) => {
+    targets.forEach(target => {
+      // Determine edge styling based on source/target
+      let strokeWidth = 2;
+      let animated = false;
+      let edgeLabel = '';
+      
+      // Main flow edges (to/from core)
+      if (source === 'core-1') {
+        strokeWidth = 4;
+        animated = true;
+        edgeLabel = 'Start →';
+      } else if (target === 'core-2') {
+        strokeWidth = 4;
+        animated = true;
+        edgeLabel = '→ Continue';
+      } else if (source.startsWith('core') || target.startsWith('core')) {
+        strokeWidth = 3;
+        edgeLabel = 'Main path';
+      } else {
+        strokeWidth = 2;
+        edgeLabel = 'Branch';
+      }
+      
+      clusterEdgesList.push({
+        id: `cluster-edge-${source}-${target}`,
+        source: `cluster-${source}`,
+        target: `cluster-${target}`,
+        type: 'conditional',
+        animated,
+        label: edgeLabel,
+        data: { 
+          condition: edgeLabel,
+          conditionMet: true,
+        },
+        style: { 
+          strokeWidth,
+          stroke: source === 'core-1' || target === 'core-2' ? '#3b82f6' : '#6b7280',
+        },
+      });
+    });
+  });
+  
+  return clusterEdgesList;
+});
+
+// Cluster layout - Position track groups and pages inside them
+const applyClusterLayout = () => {
+  try {
+    // Create clusters based on consecutive sequences (like in sequential layout)
+    const sortedNodes = [...nodes.value].sort((a, b) => {
+      const numA = parseInt(a.id.replace('P', ''));
+      const numB = parseInt(b.id.replace('P', ''));
+      return numA - numB;
+    });
+
+    // Group consecutive pages by track into segments
+    const trackSegments: Array<{ track: string; segmentId: string; nodes: any[] }> = [];
+    let currentSegment: { track: string; segmentId: string; nodes: any[] } | null = null;
+    let coreSegmentIndex = 0;
+
+    sortedNodes.forEach(node => {
+      const track = node.data.track || 'core';
+      
+      if (!currentSegment || currentSegment.track !== track) {
+        // Start a new segment
+        if (currentSegment) {
+          trackSegments.push(currentSegment);
+        }
+        
+        // Create unique segment ID (for Core, use index)
+        const segmentId = track === 'core' 
+          ? `core-${++coreSegmentIndex}` 
+          : track;
+          
+        currentSegment = { track, segmentId, nodes: [node] };
+      } else {
+        // Continue current segment
+        currentSegment.nodes.push(node);
+      }
+    });
+    
+    if (currentSegment) {
+      trackSegments.push(currentSegment);
+    }
+
+    // Group segments by their segment ID
+    const trackGroups = new Map<string, any[]>();
+    trackSegments.forEach(segment => {
+      trackGroups.set(segment.segmentId, segment.nodes);
+    });
+
+    // Create a dagre graph for cluster positioning
+    const g = new dagre.graphlib.Graph({ compound: true });
+    g.setGraph({
+      rankdir: 'TB',     // Top to bottom for better readability
+      nodesep: 220,      // Horizontal space between parallel nodes (increased for clarity)
+      ranksep: 180,      // Vertical space between levels (increased for readability)
+      edgesep: 60,
+      marginx: 120,
+      marginy: 120,
+      align: 'UL',       // Align upper-left for consistent positioning
+      ranker: 'tight-tree', // Optimal for hierarchical trees
+    });
+    g.setDefaultEdgeLabel(() => ({}));
+
+    // Calculate cluster dimensions (vertical layout)
+    const clusterDimensions = new Map<string, { width: number; height: number }>();
+    trackGroups.forEach((trackNodes, segmentId) => {
+      const pageWidth = 220;
+      const pageHeight = 180; // Estimate
+      const pageSpacingY = 30; // Vertical spacing between pages
+      const padding = 60;
+      
+      // Single column, all pages stacked vertically
+      const width = pageWidth + (padding * 2);
+      const height = (trackNodes.length * pageHeight) + ((trackNodes.length - 1) * pageSpacingY) + (padding * 2);
+      
+      clusterDimensions.set(segmentId, { width, height });
+    });
+
+    // Determine the flow hierarchy for better layout
+    const segmentLevels = new Map<string, number>();
+    trackSegments.forEach((segment, index) => {
+      const { segmentId, track } = segment;
+      
+      // Assign hierarchical levels for logical flow
+      if (segmentId === 'core-1') {
+        segmentLevels.set(segmentId, 0); // Start
+      } else if (segmentId === 'core-2') {
+        segmentLevels.set(segmentId, 2); // End
+      } else {
+        segmentLevels.set(segmentId, 1); // Middle branches
+      }
+    });
+
+    // Add cluster nodes to dagre graph (use segment IDs)
+    trackGroups.forEach((trackNodes, segmentId) => {
+      const dims = clusterDimensions.get(segmentId)!;
+      const level = segmentLevels.get(segmentId) || 0;
+      
+      g.setNode(segmentId, {
+        width: dims.width,
+        height: dims.height,
+        rank: level, // Set explicit rank for hierarchy
+      });
+    });
+
+    // Create a map of page to segment ID
+    const pageToSegment = new Map<string, string>();
+    trackSegments.forEach(segment => {
+      segment.nodes.forEach(node => {
+        pageToSegment.set(node.id, segment.segmentId);
+      });
+    });
+
+    // Add edges between clusters based on page connections
+    const clusterConnectionsSet = new Set<string>();
+    const edgeWeights = new Map<string, number>(); // Track edge importance
+    
+    edges.value.forEach(edge => {
+      const sourceSegment = pageToSegment.get(edge.source);
+      const targetSegment = pageToSegment.get(edge.target);
+      
+      if (sourceSegment && targetSegment && sourceSegment !== targetSegment) {
+        const edgeKey = `${sourceSegment}->${targetSegment}`;
+        if (!clusterConnectionsSet.has(edgeKey)) {
+          clusterConnectionsSet.add(edgeKey);
+          
+          // Calculate edge weight (main path gets higher weight)
+          let weight = 1;
+          
+          // Main path: core-1 → branches → core-2
+          if (sourceSegment === 'core-1') {
+            weight = 10; // High priority from start
+          } else if (targetSegment === 'core-2') {
+            weight = 10; // High priority to end
+          } else if (sourceSegment.startsWith('core') || targetSegment.startsWith('core')) {
+            weight = 5; // Medium priority for core transitions
+          }
+          
+          g.setEdge(sourceSegment, targetSegment, { weight });
+          edgeWeights.set(edgeKey, weight);
+        }
+      }
+    });
+
+    // Run dagre layout
+    dagre.layout(g);
+
+    // Position pages within each cluster based on dagre positions
+    trackGroups.forEach((trackNodes, segmentId) => {
+      const clusterNode = g.node(segmentId);
+      if (!clusterNode) return;
+      
+      const clusterX = clusterNode.x;
+      const clusterY = clusterNode.y;
+      const dims = clusterDimensions.get(segmentId)!;
+      
+      // Calculate cluster top-left corner
+      const clusterLeft = clusterX - (dims.width / 2);
+      const clusterTop = clusterY - (dims.height / 2);
+      
+      const padding = 60;
+      const pageWidth = 220;
+      const pageHeight = 180;
+      const pageSpacingY = 30; // Vertical spacing between pages
+      
+      // Nodes are already sorted from the segment creation
+      const sortedNodes = trackNodes;
+      
+      // Arrange pages vertically (top to bottom) within the cluster
+      sortedNodes.forEach((node, index) => {
+        node.position = {
+          x: clusterLeft + padding, // Same X for all (single column)
+          y: clusterTop + padding + (index * (pageHeight + pageSpacingY)), // Stack vertically
+        };
+        
+        node.data.trackGroup = segmentId;
+        node.data.branchInfo = undefined;
+      });
+    });
+  } catch (error) {
+    console.error('Cluster layout failed:', error);
+    // Fallback to simple layout
+    const trackGroups = new Map<string, any[]>();
+    nodes.value.forEach(node => {
+      const track = node.data.track || 'core';
+      if (!trackGroups.has(track)) {
+        trackGroups.set(track, []);
+      }
+      trackGroups.get(track)!.push(node);
+    });
+
+    const trackLayout = [
+      { track: 'core', x: 150, y: 150 },
+      { track: 'remedial', x: 500, y: 150 },
+      { track: 'project', x: 850, y: 150 },
+      { track: 'enrichment', x: 1200, y: 150 },
+    ];
+
+    trackLayout.forEach(({ track, x, y }) => {
+      const trackNodes = trackGroups.get(track) || [];
+      
+      // Sort by page number
+      const sortedNodes = [...trackNodes].sort((a, b) => {
+        const numA = parseInt(a.id.replace('P', ''));
+        const numB = parseInt(b.id.replace('P', ''));
+        return numA - numB;
+      });
+      
+      // Arrange vertically
+      sortedNodes.forEach((node, index) => {
+        node.position = {
+          x: x,
+          y: y + (index * 210), // Stack vertically
+        };
+        
+        node.data.trackGroup = track;
+        node.data.branchInfo = undefined;
+      });
+    });
+  }
 };
 
 // Create track group nodes for sequential mode (segments along the line)
@@ -585,13 +1029,16 @@ const getTrackIcon = (track: string) => {
 };
 
 // Auto-layout logic using dagre for flow mode
-const applyAutoLayout = (mode: 'flow' | 'linear' | 'sequential') => {
+const applyAutoLayout = (mode: 'flow' | 'linear' | 'sequential' | 'cluster') => {
   if (mode === 'linear') {
     // Linear layout: Horizontal pages grouped by track
     applySimpleLinearLayout();
   } else if (mode === 'sequential') {
     // Sequential layout: Single horizontal line ordered by page number
     applySequentialLayout();
+  } else if (mode === 'cluster') {
+    // Cluster layout: Track groups as main nodes with pages inside
+    applyClusterLayout();
   } else {
     // Flow layout: Use dagre for optimal graph layout
     applyDagreFlowLayout();
@@ -765,7 +1212,7 @@ const { fitView, onNodesInitialized } = useVueFlow();
 const hasInitialFit = ref(false);
 
 // Set layout mode
-const setLayoutMode = (mode: 'flow' | 'linear' | 'sequential') => {
+const setLayoutMode = (mode: 'flow' | 'linear' | 'sequential' | 'cluster') => {
   layoutMode.value = mode;
   applyAutoLayout(mode);
   
@@ -1028,7 +1475,10 @@ const visibleEdges = computed(() => {
   if (layoutMode.value === 'linear' || layoutMode.value === 'sequential') {
     return []; // No edges in linear or sequential mode
   }
-  return edges.value;
+  if (layoutMode.value === 'cluster') {
+    return clusterEdges.value; // Show cluster-level connections
+  }
+  return edges.value; // Show page-level connections in flow mode
 });
 
 // All edges definition (connections with conditional rules) - Rich path network
@@ -1374,6 +1824,16 @@ onMounted(async () => {
 
 .stat-item {
   @apply text-center p-2 bg-white rounded border border-gray-200;
+}
+
+/* Layout button styles - prevent jumping and ensure proper sizing */
+.layout-btn {
+  min-width: 120px;
+  cursor: pointer;
+}
+
+.layout-btn:active {
+  transform: none !important;
 }
 </style>
 

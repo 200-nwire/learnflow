@@ -6,13 +6,25 @@
       <template #content>
         <div class="space-y-6">
           <!-- Layout Mode Info -->
-          <div v-if="layoutMode" class="layout-info">
-            <div class="text-xs text-gray-600 mb-2">
-              <i :class="layoutMode === 'flow' ? 'pi pi-sitemap' : 'pi pi-list'" class="mr-1"></i>
-              {{ layoutMode === 'flow' 
-                ? 'Flow mode shows connections and branching logic visually' 
-                : 'Linear mode shows pages sequentially for content authoring' 
-              }}
+          <div v-if="layoutMode" class="layout-info p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <div class="space-y-2">
+              <div class="flex items-start gap-2">
+                <i :class="getLayoutIcon(layoutMode)" class="text-blue-600 mt-0.5"></i>
+                <div class="flex-1">
+                  <h4 class="text-sm font-semibold text-blue-900 mb-1">
+                    {{ getLayoutTitle(layoutMode) }}
+                  </h4>
+                  <p class="text-xs text-gray-700 leading-relaxed">
+                    {{ getLayoutDescription(layoutMode) }}
+                  </p>
+                  <div class="mt-2 pt-2 border-t border-blue-200">
+                    <p class="text-xs text-blue-700 font-medium">
+                      <i class="pi pi-info-circle mr-1"></i>
+                      {{ getLayoutContext(layoutMode) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -222,7 +234,7 @@ interface Props {
   isSimulating: boolean;
   isComplete: boolean;
   activeRules: Rule[];
-  layoutMode?: 'flow' | 'linear' | 'sequential';
+  layoutMode?: 'flow' | 'linear' | 'sequential' | 'cluster';
 }
 
 interface Emits {
@@ -260,6 +272,47 @@ watch(() => props.context, (newContext) => {
 
 const emitUpdate = () => {
   emit('update:context', localContext.value);
+};
+
+// Layout mode helpers
+const getLayoutIcon = (mode: string) => {
+  const icons = {
+    flow: 'pi pi-sitemap',
+    cluster: 'pi pi-objects-column',
+    linear: 'pi pi-bars',
+    sequential: 'pi pi-sort-amount-down',
+  };
+  return icons[mode as keyof typeof icons] || 'pi pi-th-large';
+};
+
+const getLayoutTitle = (mode: string) => {
+  const titles = {
+    flow: 'Flow View',
+    cluster: 'Path View',
+    linear: 'Pages View',
+    sequential: 'Skills View',
+  };
+  return titles[mode as keyof typeof titles] || mode;
+};
+
+const getLayoutDescription = (mode: string) => {
+  const descriptions = {
+    flow: 'Shows individual pages with connections and branching logic. Each page is a node with edges representing possible learning paths and conditions.',
+    cluster: 'Displays learning path as cohesive unit clusters. Content organized into meaningful learning units that flow naturally together, representing the smallest golden content blocks in adaptive learning.',
+    linear: 'Shows current authoring approach: pages added sequentially one-by-one. When tracks are introduced for flow design, the page numbering becomes logically inconsistent and problematic.',
+    sequential: 'Reveals how content naturally breaks into skill-based learning unit clusters. Demonstrates why unit-based authoring (not page ordering) is essential for adaptive learning with branching.',
+  };
+  return descriptions[mode as keyof typeof descriptions] || '';
+};
+
+const getLayoutContext = (mode: string) => {
+  const contexts = {
+    flow: '🔄 Current paradigm: Fixed page-by-page flow with connections',
+    cluster: '✨ Adaptive paradigm: Author by learning paths — flexible unit-based journeys',
+    linear: '📚 Current paradigm: Sequential page authoring breaks with tracks',
+    sequential: '🎯 Adaptive paradigm: Skill-based units solve branching complexity',
+  };
+  return contexts[mode as keyof typeof contexts] || '';
 };
 
 const startSimulation = () => {
