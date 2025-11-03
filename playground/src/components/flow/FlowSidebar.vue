@@ -1,15 +1,23 @@
 <template>
   <div class="flow-sidebar">
     <Card>
-      <template #title>
-        <div class="flex items-center gap-2">
-          <i class="pi pi-sliders-h text-purple-500"></i>
-          Student Simulation
-        </div>
-      </template>
+  
 
       <template #content>
         <div class="space-y-6">
+          <!-- Layout Mode Info -->
+          <div v-if="layoutMode" class="layout-info">
+            <div class="text-xs text-gray-600 mb-2">
+              <i :class="layoutMode === 'flow' ? 'pi pi-sitemap' : 'pi pi-list'" class="mr-1"></i>
+              {{ layoutMode === 'flow' 
+                ? 'Flow mode shows connections and branching logic visually' 
+                : 'Linear mode shows pages sequentially for content authoring' 
+              }}
+            </div>
+          </div>
+
+          <Divider v-if="layoutMode" />
+
           <!-- Track Selection -->
           <div>
             <label class="block text-sm font-semibold mb-2">Learning Track</label>
@@ -214,6 +222,7 @@ interface Props {
   isSimulating: boolean;
   isComplete: boolean;
   activeRules: Rule[];
+  layoutMode?: 'flow' | 'linear';
 }
 
 interface Emits {
@@ -230,6 +239,7 @@ const localContext = ref<StudentContext>({ ...props.context });
 
 const trackOptions = [
   { label: 'Core Track', value: 'core' },
+  { label: 'Remedial Track', value: 'remedial' },
   { label: 'Project Track', value: 'project' },
   { label: 'Enrichment Track', value: 'enrichment' },
 ];
@@ -276,6 +286,10 @@ const resetPath = () => {
 
 .rule-item.met {
   @apply bg-green-50 border-green-300;
+}
+
+.layout-info {
+  @apply p-3 bg-blue-50 rounded-lg border border-blue-200;
 }
 </style>
 

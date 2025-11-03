@@ -1,6 +1,6 @@
 <template>
-  <div class="flow-simulator">
-    <div class="flex h-screen">
+  <div class="flow-simulator h-screen flex flex-col">
+    <div class="flex flex-1 overflow-hidden">
       <!-- Left Sidebar -->
       <div class="sidebar-left">
         <FlowSidebar 
@@ -10,6 +10,7 @@
           :is-simulating="isSimulating"
           :is-complete="isComplete"
           :active-rules="activeRules"
+          :layout-mode="layoutMode"
           @update:context="handleContextUpdate"
           @start="startSimulation"
           @step="stepForward"
@@ -20,18 +21,26 @@
       <!-- Flow Canvas -->
       <div class="flow-canvas">
         <VueFlow
-          v-model:nodes="nodes"
-          v-model:edges="edges"
+          v-model:nodes="allNodes"
+          v-model:edges="displayedEdges"
           :node-types="nodeTypes"
           :edge-types="edgeTypes"
-          :default-zoom="0.8"
+          :default-zoom="0.6"
           :min-zoom="0.1"
           :max-zoom="2"
+          :fit-view-on-init="true"
           class="vue-flow-container"
           @node-click="handleNodeClick"
         >
           <Background pattern-color="#ddd" :gap="16" />
-          <Controls />
+          
+          <Controls>
+            <LayoutControls 
+              :layout-mode="layoutMode"
+              @toggle-layout="toggleLayout"
+              @apply-layout="() => applyAutoLayout(layoutMode)"
+            />
+          </Controls>
           <MiniMap />
           
           <Panel :position="PanelPosition.TopRight" class="flow-panel">
@@ -41,6 +50,14 @@
                 <span class="font-semibold">Path Simulation</span>
               </div>
               <div class="space-y-2 text-sm">
+                <div class="flex justify-between gap-4">
+                  <span class="text-gray-600">Layout:</span>
+                  <Tag 
+                    :value="layoutMode === 'flow' ? 'Flow Graph' : 'Linear List'" 
+                    :icon="layoutMode === 'flow' ? 'pi pi-sitemap' : 'pi pi-list'"
+                    severity="secondary"
+                  />
+                </div>
                 <div class="flex justify-between gap-4">
                   <span class="text-gray-600">Track:</span>
                   <Tag :value="studentContext.track" severity="info" />
@@ -77,6 +94,70 @@
           :decisions="pathDecisions"
           class="mb-4"
         />
+
+        <!-- Graph Overview (when no path) -->
+        <Card v-else class="mb-4">
+          <template #title>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-chart-network text-blue-500"></i>
+              Learning Path Overview
+            </div>
+          </template>
+          <template #content>
+            <div class="space-y-4">
+              <p class="text-sm text-gray-600">
+                Start a simulation to visualize a student's learning journey through the content.
+              </p>
+
+              <!-- Graph Stats -->
+              <Divider />
+              <div class="space-y-3">
+                <h4 class="text-sm font-semibold">Graph Statistics</h4>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="stat-item">
+                    <div class="text-lg font-bold text-blue-600">{{ nodes.length }}</div>
+                    <div class="text-xs text-gray-600">Total Pages</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="text-lg font-bold text-purple-600">{{ edges.length }}</div>
+                    <div class="text-xs text-gray-600">Connections</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="text-lg font-bold text-green-600">{{ trackCounts?.core || 0 }}</div>
+                    <div class="text-xs text-gray-600">Core Track</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="text-lg font-bold text-red-600">{{ trackCounts?.remedial || 0 }}</div>
+                    <div class="text-xs text-gray-600">Remedial</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="text-lg font-bold text-purple-600">{{ trackCounts?.project || 0 }}</div>
+                    <div class="text-xs text-gray-600">Project</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="text-lg font-bold text-teal-600">{{ trackCounts?.enrichment || 0 }}</div>
+                    <div class="text-xs text-gray-600">Enrichment</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Actions -->
+              <Divider />
+              <div class="space-y-2">
+                <h4 class="text-sm font-semibold">Quick Actions</h4>
+                <Button 
+                  label="Start Simulation" 
+                  icon="pi pi-play"
+                  @click="startSimulation"
+                  :disabled="isSimulating"
+                  class="w-full"
+                  severity="success"
+                  size="small"
+                />
+              </div>
+            </div>
+          </template>
+        </Card>
 
         <!-- Node Details -->
         <Card v-if="selectedNode">
@@ -164,7 +245,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { VueFlow, Panel, PanelPosition, useVueFlow } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
@@ -178,9 +259,12 @@ import Checkbox from 'primevue/checkbox';
 import Tag from 'primevue/tag';
 import Divider from 'primevue/divider';
 import PageNode from '../components/flow/PageNode.vue';
+import TrackGroupNode from '../components/flow/TrackGroupNode.vue';
 import ConditionalEdge from '../components/flow/ConditionalEdge.vue';
 import FlowSidebar, { type StudentContext } from '../components/flow/FlowSidebar.vue';
 import PathReplay from '../components/flow/PathReplay.vue';
+import LayoutControls from '../components/flow/LayoutControls.vue';
+import dagre from 'dagre';
 
 // Import VueFlow styles
 import '@vue-flow/core/dist/style.css';
@@ -191,6 +275,7 @@ import '@vue-flow/minimap/dist/style.css';
 // Register custom node and edge types
 const nodeTypes = {
   page: PageNode,
+  trackGroup: TrackGroupNode,
 };
 
 const edgeTypes = {
@@ -214,6 +299,20 @@ const selectedNode = ref<any>(null);
 const simulationPath = ref<string[]>(['P1']);
 const currentStep = ref(0);
 const pathDecisions = ref<Array<{ fromPage: string; toPage: string; reason: string }>>([]);
+const layoutMode = ref<'flow' | 'linear'>('linear');
+
+// All nodes including track groups and pages
+const allNodes = computed(() => {
+  const result = [...nodes.value];
+  
+  // Add track group nodes in linear mode
+  if (layoutMode.value === 'linear') {
+    const trackGroupNodes = createTrackGroupNodes();
+    result.unshift(...trackGroupNodes); // Add at beginning (behind pages)
+  }
+  
+  return result;
+});
 
 // Pages map for quick lookup
 const pagesMap = computed(() => {
@@ -224,191 +323,575 @@ const pagesMap = computed(() => {
   return map;
 });
 
-// Define nodes (pages) - Rich learning path with branching
+// Track counts for stats
+const trackCounts = computed(() => {
+  const counts: Record<string, number> = {};
+  nodes.value.forEach(node => {
+    const track = node.data.track || 'core';
+    counts[track] = (counts[track] || 0) + 1;
+  });
+  return counts;
+});
+
+// Calculate estimated height of a page node based on its content
+const calculateNodeHeight = (nodeData: any): number => {
+  let height = 0;
+  
+  // Base: header + title + padding
+  height += 80;
+  
+  // Branch info (doesn't add height, it's absolutely positioned)
+  // height += 0;
+  
+  // Variants section
+  const hasVariants = (nodeData.variants?.length || 0) > 1;
+  if (hasVariants) {
+    height += 70; // Variants slider with dots
+  }
+  
+  // Blocks info
+  if (nodeData.blocks && nodeData.blocks.length > 0) {
+    height += 28; // Blocks line
+  }
+  
+  // Meta tags (modality + duration)
+  let metaTagsCount = 0;
+  if (nodeData.modality) metaTagsCount++;
+  if (nodeData.duration) metaTagsCount++;
+  if (metaTagsCount > 0) {
+    height += 32; // Tag row
+  }
+  
+  // Add some buffer for padding and borders
+  height += 20;
+  
+  return height;
+};
+
+// Create track group nodes for linear mode
+const createTrackGroupNodes = () => {
+  const trackInfo = {
+    core: { color: '#3b82f6', label: 'Core Track', order: 0 },
+    remedial: { color: '#ef4444', label: 'Remedial Track', order: 1 },
+    project: { color: '#8b5cf6', label: 'Project Track', order: 2 },
+    enrichment: { color: '#10b981', label: 'Enrichment Track', order: 3 },
+  };
+  
+  // Group pages by track
+  const groups = new Map<string, any[]>();
+  nodes.value.forEach(node => {
+    const track = node.data.track || 'core';
+    if (!groups.has(track)) {
+      groups.set(track, []);
+    }
+    groups.get(track)!.push(node);
+  });
+  
+  // Create group nodes
+  return Array.from(groups.entries())
+    .filter(([_, trackNodes]) => trackNodes.length > 0)
+    .map(([track, trackNodes]) => {
+      const info = trackInfo[track as keyof typeof trackInfo] || { color: '#666', label: track, order: 99 };
+      
+      // Calculate bounds from actual page positions
+      const positions = trackNodes.map(n => n.position);
+      const xs = positions.map(p => p.x);
+      const ys = positions.map(p => p.y);
+      
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      
+      const nodeWidth = 220;
+      const paddingX = 30;      // Horizontal padding
+      const paddingY = 40;      // Vertical padding (consistent top/bottom)
+      
+      // Calculate the maximum height based on content
+      const nodeHeights = trackNodes.map(node => {
+        // Try to get actual rendered dimensions first
+        if (node.dimensions?.height) {
+          return node.dimensions.height;
+        }
+        // Otherwise calculate based on content
+        return calculateNodeHeight(node.data);
+      });
+      const maxNodeHeight = Math.max(...nodeHeights, 150); // At least 150px
+      
+      // Width based on horizontal span of pages
+      const groupWidth = (maxX - minX) + nodeWidth + (paddingX * 2);
+      
+      // Height fits the tallest page with consistent padding
+      const groupHeight = maxNodeHeight + (paddingY * 2);
+      
+      return {
+        id: `group-${track}`,
+        type: 'trackGroup',
+        position: {
+          x: minX - paddingX,
+          y: minY - paddingY,  // Consistent top padding
+        },
+        data: {
+          track,
+          label: info.label,
+          color: info.color,
+          width: groupWidth,
+          height: groupHeight,
+          pageCount: trackNodes.length,
+        },
+        draggable: false,
+        selectable: false,
+        zIndex: -1, // Behind page nodes
+      };
+    });
+};
+
+const getTrackIcon = (track: string) => {
+  const icons: Record<string, string> = {
+    core: 'pi pi-book',
+    project: 'pi pi-briefcase',
+    enrichment: 'pi pi-star',
+    remedial: 'pi pi-heart',
+  };
+  return icons[track] || 'pi pi-folder';
+};
+
+// Auto-layout logic using dagre for flow mode
+const applyAutoLayout = (mode: 'flow' | 'linear') => {
+  if (mode === 'linear') {
+    // Linear layout: Simple vertical stacking
+    applySimpleLinearLayout();
+  } else {
+    // Flow layout: Use dagre for optimal graph layout
+    applyDagreFlowLayout();
+  }
+};
+
+// Linear layout - Horizontal pages within track rows
+const applySimpleLinearLayout = () => {
+  // Group nodes by track
+  const trackGroups = new Map<string, any[]>();
+
+  nodes.value.forEach(node => {
+    const track = node.data.track || 'core';
+    if (!trackGroups.has(track)) {
+      trackGroups.set(track, []);
+    }
+    trackGroups.get(track)!.push(node);
+  });
+
+  // Define track order
+  const trackLayout = [
+    { track: 'core', label: 'Core Track', color: '#3b82f6' },
+    { track: 'remedial', label: 'Remedial Track', color: '#ef4444' },
+    { track: 'project', label: 'Project Track', color: '#8b5cf6' },
+    { track: 'enrichment', label: 'Enrichment Track', color: '#10b981' },
+  ];
+
+  const startX = 100;          // Starting X position
+  const startY = 150;          // Starting Y position for first track
+  const pageSpacing = 260;     // Horizontal spacing between pages
+  const groupGap = 60;         // Vertical gap between track groups
+  const paddingY = 40;         // Padding inside each group
+
+  // Position nodes dynamically, stacking groups vertically
+  let currentY = startY;
+
+  trackLayout.forEach(({ track }, trackIndex) => {
+    const trackNodes = trackGroups.get(track) || [];
+    if (trackNodes.length === 0) return;
+
+    // Calculate max height for this track
+    const nodeHeights = trackNodes.map(node => {
+      if (node.dimensions?.height) return node.dimensions.height;
+      return calculateNodeHeight(node.data);
+    });
+    const maxNodeHeight = Math.max(...nodeHeights, 150);
+
+    // Position all nodes in this track at the same Y
+    trackNodes.forEach((node, index) => {
+      node.position = {
+        x: startX + (index * pageSpacing),  // Horizontal left-to-right
+        y: currentY,                         // Same Y for all in track
+      };
+
+      // Add track info for grouping
+      node.data.trackGroup = track;
+      node.data.trackRow = trackIndex;
+      node.data.branchInfo = undefined;
+    });
+
+    // Move Y down for next track (node height + padding + gap)
+    currentY += maxNodeHeight + (paddingY * 2) + groupGap;
+  });
+};
+
+// Dagre flow layout with better edge routing
+const applyDagreFlowLayout = () => {
+  try {
+    // Create dagre graph
+    const dagreGraph = new dagre.graphlib.Graph({ compound: true });
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    
+    // Configure graph for optimal layout
+    dagreGraph.setGraph({
+      rankdir: 'TB',          // Top to bottom
+      nodesep: 150,           // Horizontal spacing (wider to prevent overlap)
+      ranksep: 200,           // Vertical spacing
+      edgesep: 50,            // Edge separation
+      ranker: 'longest-path', // Better for complex graphs
+      align: 'UL',            // Upper-left alignment
+      marginx: 100,           // Graph margins
+      marginy: 100,
+    });
+    
+    // Add nodes with dimensions
+    nodes.value.forEach(node => {
+      dagreGraph.setNode(node.id, { 
+        width: 220, 
+        height: 150,
+        label: node.data.title,
+      });
+    });
+    
+    // Add edges with weight (prefer straight paths)
+    edges.value.forEach(edge => {
+      dagreGraph.setEdge(edge.source, edge.target, {
+        weight: 1,           // Equal weight
+        minlen: 1,          // Minimum edge length
+        width: 1,
+        height: 1,
+      });
+    });
+    
+    // Run dagre layout
+    dagre.layout(dagreGraph);
+    
+    // Apply positions with better centering
+    nodes.value.forEach(node => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+      if (nodeWithPosition) {
+        node.position = {
+          x: nodeWithPosition.x - 110,  // Center horizontally
+          y: nodeWithPosition.y - 75,   // Center vertically
+        };
+        // Clear branch info in flow mode
+        node.data.branchInfo = undefined;
+        node.data.trackGroup = undefined;
+      }
+    });
+  } catch (error) {
+    console.error('Dagre layout failed:', error);
+  }
+};
+
+// Get VueFlow instance for fit view
+const { fitView, onNodesInitialized } = useVueFlow();
+
+// Flag to track if we've done the initial fit
+const hasInitialFit = ref(false);
+
+// Toggle layout mode
+const toggleLayout = () => {
+  const newMode = layoutMode.value === 'flow' ? 'linear' : 'flow';
+  layoutMode.value = newMode;
+  applyAutoLayout(newMode);
+  
+  // Auto-fit view after layout change (don't use hasInitialFit flag for manual toggles)
+  setTimeout(() => {
+    fitView({ padding: 0.2, duration: 500 });
+  }, 100);
+};
+
+// Define nodes (pages) - Rich learning path with branching (15 pages)
 const nodes = ref([
+  // Core Track - Main Path
   {
     id: 'P1',
     type: 'page',
-    position: { x: 450, y: 50 },
+    position: { x: 500, y: 50 },
     data: {
       id: 'P1',
       code: 'P1',
-      title: 'Intro - Fractions Basics',
+      title: 'Intro',
       track: 'core',
       isActive: true,
       isVisited: true,
       variants: [
-        { id: 'easy_video_soccer', meta: { difficulty: 'easy', modality: 'video', theme: 'soccer', durationSec: 90 } },
-        { id: 'std_reading', meta: { difficulty: 'std', modality: 'reading', durationSec: 120 } },
-        { id: 'hard_interactive', meta: { difficulty: 'hard', modality: 'interactive', durationSec: 180 } },
+        { id: 'easy_video', meta: { difficulty: 'easy', modality: 'video', theme: 'soccer' } },
+        { id: 'std_reading', meta: { difficulty: 'std', modality: 'reading' } },
       ],
       selectedVariantId: 'std_reading',
-      blocks: [
-        { id: 'b1', type: 'text' },
-        { id: 'b2', type: 'video' },
-        { id: 'b3', type: 'question' },
-      ],
-      modality: 'video',
-      duration: 120,
+      blocks: [{ id: 'b1', type: 'video' }, { id: 'b2', type: 'text' }],
     },
   },
   {
     id: 'P2',
     type: 'page',
-    position: { x: 450, y: 250 },
+    position: { x: 500, y: 250 },
     data: {
       id: 'P2',
       code: 'P2',
-      title: 'Practice Quiz',
+      title: 'Diagnostic Quiz',
+      track: 'core',
+      isActive: false,
+      isVisited: false,
+      blocks: [{ id: 'b1', type: 'multiple_choice' }, { id: 'b2', type: 'question' }],
+    },
+  },
+  {
+    id: 'P3',
+    type: 'page',
+    position: { x: 500, y: 350 },
+    data: {
+      id: 'P3',
+      code: 'P3',
+      title: 'Concept Deep Dive',
       track: 'core',
       isActive: false,
       isVisited: false,
       variants: [
-        { id: 'easy_hints', meta: { difficulty: 'easy', modality: 'quiz' } },
-        { id: 'std_quiz', meta: { difficulty: 'std', modality: 'quiz' } },
+        { id: 'visual', meta: { difficulty: 'easy', modality: 'video' } },
+        { id: 'text', meta: { difficulty: 'std', modality: 'reading' } },
+        { id: 'interactive', meta: { difficulty: 'hard', modality: 'interactive' } },
       ],
-      selectedVariantId: 'std_quiz',
-      blocks: [
-        { id: 'b1', type: 'text' },
-        { id: 'b2', type: 'multiple_choice' },
-        { id: 'b3', type: 'multiple_choice' },
-      ],
+      selectedVariantId: 'visual',
+    },
+  },
+  
+  // Project Track - Branch
+  {
+    id: 'P4',
+    type: 'page',
+    position: { x: 200, y: 450 },
+    data: {
+      id: 'P4',
+      code: 'P4',
+      title: 'Project Brief',
+      track: 'project',
+      isActive: false,
+      isVisited: false,
+      blocks: [{ id: 'b1', type: 'text' }],
     },
   },
   {
-    id: 'P3a',
+    id: 'P5',
     type: 'page',
-    position: { x: 250, y: 450 },
+    position: { x: 200, y: 550 },
     data: {
-      id: 'P3a',
-      code: 'P3a',
+      id: 'P5',
+      code: 'P5',
+      title: 'Research Phase',
+      track: 'project',
+      isActive: false,
+      isVisited: false,
+      blocks: [{ id: 'b1', type: 'text' }, { id: 'b2', type: 'file_upload' }],
+    },
+  },
+  {
+    id: 'P6',
+    type: 'page',
+    position: { x: 200, y: 650 },
+    data: {
+      id: 'P6',
+      code: 'P6',
       title: 'Project Work',
       track: 'project',
       isActive: false,
       isVisited: false,
-      blocks: [
-        { id: 'b1', type: 'text' },
-        { id: 'b2', type: 'file_upload' },
-        { id: 'b3', type: 'image' },
-      ],
+      blocks: [{ id: 'b1', type: 'file_upload' }],
     },
   },
   {
-    id: 'P3b',
+    id: 'P7',
     type: 'page',
-    position: { x: 650, y: 450 },
+    position: { x: 200, y: 750 },
     data: {
-      id: 'P3b',
-      code: 'P3b',
-      title: 'Extended Practice',
+      id: 'P7',
+      code: 'P7',
+      title: 'Peer Review',
+      track: 'project',
+      isActive: false,
+      isVisited: false,
+      blocks: [{ id: 'b1', type: 'text' }],
+    },
+  },
+  
+  // Enrichment Track - Advanced
+  {
+    id: 'P8',
+    type: 'page',
+    position: { x: 800, y: 450 },
+    data: {
+      id: 'P8',
+      code: 'P8',
+      title: 'Advanced Concepts',
       track: 'enrichment',
       isActive: false,
       isVisited: false,
       variants: [
-        { id: 'guided_practice', meta: { difficulty: 'easy', modality: 'interactive' } },
-        { id: 'independent_work', meta: { difficulty: 'hard', modality: 'simulation' } },
+        { id: 'guided', meta: { difficulty: 'std', modality: 'video' } },
+        { id: 'challenge', meta: { difficulty: 'hard', modality: 'simulation' } },
       ],
-      selectedVariantId: 'guided_practice',
-      blocks: [
-        { id: 'b1', type: 'text' },
-        { id: 'b2', type: 'question' },
-      ],
+      selectedVariantId: 'guided',
     },
   },
   {
-    id: 'P4',
+    id: 'P9',
     type: 'page',
-    position: { x: 450, y: 650 },
+    position: { x: 800, y: 550 },
     data: {
-      id: 'P4',
-      code: 'P4',
-      title: 'Final Assessment',
+      id: 'P9',
+      code: 'P9',
+      title: 'Challenge Problems',
+      track: 'enrichment',
+      isActive: false,
+      isVisited: false,
+      blocks: [{ id: 'b1', type: 'question' }, { id: 'b2', type: 'question' }],
+    },
+  },
+  {
+    id: 'P10',
+    type: 'page',
+    position: { x: 800, y: 650 },
+    data: {
+      id: 'P10',
+      code: 'P10',
+      title: 'Extension Activity',
+      track: 'enrichment',
+      isActive: false,
+      isVisited: false,
+    },
+  },
+  
+  // Remedial Track - Support
+  {
+    id: 'P11',
+    type: 'page',
+    position: { x: 100, y: 350 },
+    data: {
+      id: 'P11',
+      code: 'P11',
+      title: 'Remedial Support',
+      track: 'remedial',
+      isActive: false,
+      isVisited: false,
+      variants: [
+        { id: 'video_help', meta: { difficulty: 'easy', modality: 'video' } },
+        { id: 'step_by_step', meta: { difficulty: 'easy', modality: 'interactive' } },
+      ],
+      selectedVariantId: 'video_help',
+    },
+  },
+  {
+    id: 'P12',
+    type: 'page',
+    position: { x: 100, y: 450 },
+    data: {
+      id: 'P12',
+      code: 'P12',
+      title: 'Practice Basics',
+      track: 'remedial',
+      isActive: false,
+      isVisited: false,
+      blocks: [{ id: 'b1', type: 'question' }],
+    },
+  },
+  
+  // Assessment Path
+  {
+    id: 'P13',
+    type: 'page',
+    position: { x: 500, y: 850 },
+    data: {
+      id: 'P13',
+      code: 'P13',
+      title: 'Mid Assessment',
+      track: 'core',
+      isActive: false,
+      isVisited: false,
+      blocks: [{ id: 'b1', type: 'question' }, { id: 'b2', type: 'question' }],
+    },
+  },
+  {
+    id: 'P14',
+    type: 'page',
+    position: { x: 500, y: 950 },
+    data: {
+      id: 'P14',
+      code: 'P14',
+      title: 'Review Session',
+      track: 'core',
+      isActive: false,
+      isVisited: false,
+      variants: [
+        { id: 'quick_review', meta: { difficulty: 'std', modality: 'reading' } },
+        { id: 'deep_review', meta: { difficulty: 'std', modality: 'video' } },
+      ],
+      selectedVariantId: 'quick_review',
+    },
+  },
+  {
+    id: 'P15',
+    type: 'page',
+    position: { x: 500, y: 1050 },
+    data: {
+      id: 'P15',
+      code: 'P15',
+      title: 'Final Exam',
       track: 'core',
       isActive: false,
       isVisited: false,
       blocks: [
-        { id: 'b1', type: 'text' },
+        { id: 'b1', type: 'question' },
         { id: 'b2', type: 'question' },
         { id: 'b3', type: 'question' },
-        { id: 'b4', type: 'question' },
       ],
     },
   },
 ]);
 
-// Define edges (connections with conditional rules)
+// Displayed edges (filtered based on layout mode)
+const displayedEdges = computed(() => {
+  if (layoutMode.value === 'linear') {
+    return []; // No edges in linear mode
+  }
+  return edges.value;
+});
+
+// All edges definition (connections with conditional rules) - Rich path network
 const edges = ref([
-  {
-    id: 'e1-2',
-    source: 'P1',
-    target: 'P2',
-    type: 'conditional',
-    animated: true,
-    data: {
-      condition: 'track: core',
-      conditionMet: true,
-    },
-  },
-  {
-    id: 'e2-3a',
-    source: 'P2',
-    target: 'P3a',
-    type: 'conditional',
-    data: {
-      condition: 'track: project',
-      conditionMet: false,
-    },
-  },
-  {
-    id: 'e2-3b',
-    source: 'P2',
-    target: 'P3b',
-    type: 'conditional',
-    data: {
-      condition: 'track: enrichment && engagement > 0.6',
-      conditionMet: false,
-    },
-  },
-  {
-    id: 'e2-4',
-    source: 'P2',
-    target: 'P4',
-    type: 'conditional',
-    data: {
-      condition: 'track: core && accuracy > 0.8',
-      conditionMet: false,
-    },
-  },
-  {
-    id: 'e3a-4',
-    source: 'P3a',
-    target: 'P4',
-    type: 'conditional',
-    data: {
-      condition: 'completed',
-      conditionMet: false,
-    },
-  },
-  {
-    id: 'e3a-3b',
-    source: 'P3a',
-    target: 'P3b',
-    type: 'conditional',
-    data: {
-      condition: 'enrichment && engagement <= 0.6',
-      conditionMet: false,
-    },
-  },
-  {
-    id: 'e3b-4',
-    source: 'P3b',
-    target: 'P4',
-    type: 'conditional',
-    data: {
-      condition: 'completed',
-      conditionMet: false,
-    },
-  },
+  // Main path
+  { id: 'e1-2', source: 'P1', target: 'P2', type: 'conditional', animated: true, data: { condition: 'all', conditionMet: true } },
+  { id: 'e2-3', source: 'P2', target: 'P3', type: 'conditional', data: { condition: 'accuracy >= 0.5', conditionMet: true } },
+  
+  // Remedial branch (low performance)
+  { id: 'e2-11', source: 'P2', target: 'P11', type: 'conditional', data: { condition: 'accuracy < 0.5', conditionMet: false } },
+  { id: 'e11-12', source: 'P11', target: 'P12', type: 'conditional', data: { condition: 'completed', conditionMet: false } },
+  { id: 'e12-3', source: 'P12', target: 'P3', type: 'conditional', data: { condition: 'remediation done', conditionMet: false } },
+  
+  // Track branching from P3
+  { id: 'e3-4', source: 'P3', target: 'P4', type: 'conditional', data: { condition: 'track: project', conditionMet: false } },
+  { id: 'e3-8', source: 'P3', target: 'P8', type: 'conditional', data: { condition: 'track: enrichment', conditionMet: false } },
+  { id: 'e3-13', source: 'P3', target: 'P13', type: 'conditional', data: { condition: 'track: core', conditionMet: true } },
+  
+  // Project track path
+  { id: 'e4-5', source: 'P4', target: 'P5', type: 'conditional', data: { condition: 'completed', conditionMet: false } },
+  { id: 'e5-6', source: 'P5', target: 'P6', type: 'conditional', data: { condition: 'completed', conditionMet: false } },
+  { id: 'e6-7', source: 'P6', target: 'P7', type: 'conditional', data: { condition: 'completed', conditionMet: false } },
+  { id: 'e7-13', source: 'P7', target: 'P13', type: 'conditional', data: { condition: 'project complete', conditionMet: false } },
+  
+  // Enrichment track path
+  { id: 'e8-9', source: 'P8', target: 'P9', type: 'conditional', data: { condition: 'engagement > 0.7', conditionMet: false } },
+  { id: 'e9-10', source: 'P9', target: 'P10', type: 'conditional', data: { condition: 'completed', conditionMet: false } },
+  { id: 'e10-13', source: 'P10', target: 'P13', type: 'conditional', data: { condition: 'enrichment complete', conditionMet: false } },
+  
+  // Skip to assessment (high performers)
+  { id: 'e8-13', source: 'P8', target: 'P13', type: 'conditional', data: { condition: 'engagement <= 0.7', conditionMet: false } },
+  
+  // Assessment path
+  { id: 'e13-14', source: 'P13', target: 'P14', type: 'conditional', data: { condition: 'completed', conditionMet: false } },
+  { id: 'e14-15', source: 'P14', target: 'P15', type: 'conditional', data: { condition: 'ready for final', conditionMet: false } },
 ]);
 
 // Active rules from current page
@@ -573,7 +1056,10 @@ const resetSimulation = () => {
 
 // Handle node click
 const handleNodeClick = ({ node }: any) => {
-  selectedNode.value = node;
+  // Only select page nodes, not track groups
+  if (node.type === 'page') {
+    selectedNode.value = node;
+  }
 };
 
 // Utility functions
@@ -595,15 +1081,61 @@ const getBlockIcon = (type: string) => {
   return icons[type] || 'pi pi-circle';
 };
 
-onMounted(() => {
-  updateNodeStates();
+// Watch for context changes to update branch conditions
+watch(() => studentContext.value, () => {
   updateEdgeConditions();
+  if (layoutMode.value === 'linear') {
+    applyAutoLayout('linear'); // Re-apply to update branch info
+  }
+}, { deep: true });
+
+// Handle initial layout and fit when nodes are ready
+onNodesInitialized(() => {
+  if (!hasInitialFit.value) {
+    hasInitialFit.value = true;
+    
+    // Apply layout now that VueFlow is ready
+    applyAutoLayout(layoutMode.value);
+    updateNodeStates();
+    updateEdgeConditions();
+    
+    // Fit view after layout is applied
+    setTimeout(() => {
+      fitView({ padding: 0.2, duration: 800 });
+    }, 150);
+  }
+});
+
+onMounted(async () => {
+  // Wait for Vue to finish rendering
+  await nextTick();
+  
+  // Fallback in case onNodesInitialized doesn't fire
+  setTimeout(() => {
+    if (!hasInitialFit.value) {
+      hasInitialFit.value = true;
+      applyAutoLayout(layoutMode.value);
+      updateNodeStates();
+      updateEdgeConditions();
+      
+      setTimeout(() => {
+        fitView({ padding: 0.2, duration: 800 });
+      }, 150);
+    }
+  }, 1000);
 });
 </script>
 
 <style scoped>
 .flow-simulator {
-  @apply h-screen overflow-hidden bg-gray-50;
+  @apply bg-gray-50;
+  height: calc(100vh - 105px); /* Account for header height */
+  overflow: hidden; /* Prevent scrolling */
+}
+
+.flow-simulator > div {
+  height: 100%;
+  overflow: hidden; /* Prevent scrolling */
 }
 
 .sidebar-left {
@@ -615,15 +1147,37 @@ onMounted(() => {
 }
 
 .flow-canvas {
-  @apply flex-1 relative;
+  @apply flex-1 relative overflow-hidden;
 }
 
 .vue-flow-container {
   @apply w-full h-full;
+  height: 100%;
 }
 
 .flow-panel {
   @apply pointer-events-auto;
+}
+
+.custom-controls-panel {
+  @apply pointer-events-auto;
+}
+
+:deep(.vue-flow__controls) {
+  @apply flex flex-col gap-2;
+}
+
+:deep(.vue-flow__controls-button) {
+  @apply w-8 h-8 flex items-center justify-center;
+}
+
+:deep(.vue-flow__node-trackGroup) {
+  z-index: -1 !important;
+  pointer-events: none;
+}
+
+:deep(.vue-flow__node-page) {
+  z-index: 10 !important;
 }
 
 .variant-card {
@@ -644,6 +1198,10 @@ onMounted(() => {
 
 :deep(.vue-flow__controls) {
   @apply shadow-lg rounded-lg overflow-hidden border border-gray-300;
+}
+
+.stat-item {
+  @apply text-center p-2 bg-white rounded border border-gray-200;
 }
 </style>
 

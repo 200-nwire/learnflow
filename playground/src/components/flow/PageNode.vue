@@ -1,11 +1,20 @@
 <template>
   <div 
-    class="page-node"
+    class="page-node relative"
     :class="[
       `difficulty-${difficulty}`,
       { 'active': isActive, 'visited': isVisited, 'has-variants': hasVariants }
     ]"
   >
+    <!-- Branch indicator for linear mode -->
+    <div v-if="data.branchInfo" class="branch-info">
+      <Tag 
+        :value="data.branchInfo.condition" 
+        :severity="data.branchInfo.isActive ? 'success' : 'secondary'"
+        size="small"
+        class="text-xs"
+      />
+    </div>
     <!-- Node Header -->
     <div class="node-header">
       <div class="flex items-center justify-between">
@@ -82,6 +91,10 @@ interface PageNodeData {
   isActive?: boolean;
   isVisited?: boolean;
   selectedVariantId?: string;
+  branchInfo?: {
+    condition: string;
+    isActive: boolean;
+  };
 }
 
 interface Props {
@@ -188,5 +201,10 @@ const getDifficultySeverity = () => {
 .node-status {
   @apply absolute top-2 right-2;
 }
+
+.branch-info {
+  @apply absolute -top-8 left-1/2 -translate-x-1/2 z-10;
+}
+
 </style>
 
