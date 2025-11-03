@@ -22,7 +22,7 @@
       <div class="flow-canvas">
         <VueFlow
           v-model:nodes="allNodes"
-          v-model:edges="displayedEdges"
+          v-model:edges="visibleEdges"
           :node-types="nodeTypes"
           :edge-types="edgeTypes"
           :default-zoom="0.6"
@@ -34,13 +34,7 @@
         >
           <Background pattern-color="#ddd" :gap="16" />
           
-          <Controls>
-            <LayoutControls 
-              :layout-mode="layoutMode"
-              @toggle-layout="toggleLayout"
-              @apply-layout="() => applyAutoLayout(layoutMode)"
-            />
-          </Controls>
+          <Controls />
           <MiniMap />
           
           <Panel :position="PanelPosition.TopRight" class="flow-panel">
@@ -49,15 +43,56 @@
                 <i class="pi pi-info-circle text-blue-500"></i>
                 <span class="font-semibold">Path Simulation</span>
               </div>
-              <div class="space-y-2 text-sm">
-                <div class="flex justify-between gap-4">
-                  <span class="text-gray-600">Layout:</span>
-                  <Tag 
-                    :value="layoutMode === 'flow' ? 'Flow Graph' : 'Linear List'" 
-                    :icon="layoutMode === 'flow' ? 'pi pi-sitemap' : 'pi pi-list'"
-                    severity="secondary"
-                  />
+              <div class="space-y-3 text-sm">
+                <!-- Layout Switcher -->
+                <div class="space-y-2">
+                  <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Layout View</label>
+                  <div class="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                    <Button
+                      :icon="'pi pi-sitemap'"
+                      @click="setLayoutMode('flow')"
+                      :severity="layoutMode === 'flow' ? 'info' : 'secondary'"
+                      :outlined="layoutMode !== 'flow'"
+                      :text="layoutMode !== 'flow'"
+                      size="small"
+                      class="flex-1"
+                      v-tooltip.bottom="'Flow Graph'"
+                    >
+                      <span class="hidden sm:inline">Flow</span>
+                    </Button>
+                    <Button
+                      :icon="'pi pi-bars'"
+                      @click="setLayoutMode('linear')"
+                      :severity="layoutMode === 'linear' ? 'info' : 'secondary'"
+                      :outlined="layoutMode !== 'linear'"
+                      :text="layoutMode !== 'linear'"
+                      size="small"
+                      class="flex-1"
+                      v-tooltip.bottom="'Track Groups'"
+                    >
+                      <span class="hidden sm:inline">Track</span>
+                    </Button>
+                    <Button
+                      :icon="'pi pi-sort-numeric-up'"
+                      @click="setLayoutMode('sequential')"
+                      :severity="layoutMode === 'sequential' ? 'info' : 'secondary'"
+                      :outlined="layoutMode !== 'sequential'"
+                      :text="layoutMode !== 'sequential'"
+                      size="small"
+                      class="flex-1"
+                      v-tooltip.bottom="'Page Order'"
+                    >
+                      <span class="hidden sm:inline">Order</span>
+                    </Button>
+                  </div>
+                  <div class="text-xs text-gray-500 text-center px-1">
+                    {{ layoutMode === 'flow' ? '📊 Graph with connections' : 
+                       layoutMode === 'linear' ? '📚 Grouped by tracks' : 
+                       '🔢 Sequential order' }}
+                  </div>
                 </div>
+                
+                <Divider />
                 <div class="flex justify-between gap-4">
                   <span class="text-gray-600">Track:</span>
                   <Tag :value="studentContext.track" severity="info" />
@@ -263,7 +298,6 @@ import TrackGroupNode from '../components/flow/TrackGroupNode.vue';
 import ConditionalEdge from '../components/flow/ConditionalEdge.vue';
 import FlowSidebar, { type StudentContext } from '../components/flow/FlowSidebar.vue';
 import PathReplay from '../components/flow/PathReplay.vue';
-import LayoutControls from '../components/flow/LayoutControls.vue';
 import dagre from 'dagre';
 
 // Import VueFlow styles
@@ -299,7 +333,7 @@ const selectedNode = ref<any>(null);
 const simulationPath = ref<string[]>(['P1']);
 const currentStep = ref(0);
 const pathDecisions = ref<Array<{ fromPage: string; toPage: string; reason: string }>>([]);
-const layoutMode = ref<'flow' | 'linear'>('linear');
+const layoutMode = ref<'flow' | 'linear' | 'sequential'>('linear');
 
 // All nodes including track groups and pages
 const allNodes = computed(() => {
@@ -308,6 +342,12 @@ const allNodes = computed(() => {
   // Add track group nodes in linear mode
   if (layoutMode.value === 'linear') {
     const trackGroupNodes = createTrackGroupNodes();
+    result.unshift(...trackGroupNodes); // Add at beginning (behind pages)
+  }
+  
+  // Add track group nodes in sequential mode
+  if (layoutMode.value === 'sequential') {
+    const trackGroupNodes = createSequentialTrackGroupNodes();
     result.unshift(...trackGroupNodes); // Add at beginning (behind pages)
   }
   
@@ -366,6 +406,94 @@ const calculateNodeHeight = (nodeData: any): number => {
   height += 20;
   
   return height;
+};
+
+// Create track group nodes for sequential mode (segments along the line)
+const createSequentialTrackGroupNodes = () => {
+  const trackInfo = {
+    core: { color: '#3b82f6', label: 'Core Track', order: 0 },
+    remedial: { color: '#ef4444', label: 'Remedial Track', order: 1 },
+    project: { color: '#8b5cf6', label: 'Project Track', order: 2 },
+    enrichment: { color: '#10b981', label: 'Enrichment Track', order: 3 },
+  };
+
+  // Sort nodes by page number
+  const sortedNodes = [...nodes.value].sort((a, b) => {
+    const numA = parseInt(a.id.replace('P', ''));
+    const numB = parseInt(b.id.replace('P', ''));
+    return numA - numB;
+  });
+
+  // Group consecutive pages by track (create segments)
+  const segments: Array<{ track: string; nodes: any[] }> = [];
+  let currentSegment: { track: string; nodes: any[] } | null = null;
+
+  sortedNodes.forEach(node => {
+    const track = node.data.track || 'core';
+    
+    if (!currentSegment || currentSegment.track !== track) {
+      // Start a new segment
+      if (currentSegment) {
+        segments.push(currentSegment);
+      }
+      currentSegment = { track, nodes: [node] };
+    } else {
+      // Continue current segment
+      currentSegment.nodes.push(node);
+    }
+  });
+  
+  if (currentSegment) {
+    segments.push(currentSegment);
+  }
+
+  // Create group nodes for each segment
+  const paddingX = 30;
+  const paddingY = 40;
+  const nodeWidth = 220;
+
+  return segments.map((segment, segmentIndex) => {
+    const info = trackInfo[segment.track as keyof typeof trackInfo] || { color: '#666', label: segment.track };
+    
+    // Calculate bounds
+    const positions = segment.nodes.map(n => n.position);
+    const xs = positions.map(p => p.x);
+    const ys = positions.map(p => p.y);
+    
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+
+    // Calculate height
+    const nodeHeights = segment.nodes.map(node => {
+      if (node.dimensions?.height) return node.dimensions.height;
+      return calculateNodeHeight(node.data);
+    });
+    const maxNodeHeight = Math.max(...nodeHeights, 150);
+
+    const groupWidth = (maxX - minX) + nodeWidth + (paddingX * 2);
+    const groupHeight = maxNodeHeight + (paddingY * 2);
+
+    return {
+      id: `group-seq-${segmentIndex}-${segment.track}`,
+      type: 'trackGroup',
+      position: {
+        x: minX - paddingX,
+        y: minY - paddingY,
+      },
+      data: {
+        track: segment.track,
+        label: `${info.label} (${segment.nodes.length})`,
+        color: info.color,
+        width: groupWidth,
+        height: groupHeight,
+        pageCount: segment.nodes.length,
+      },
+      draggable: false,
+      selectable: false,
+      zIndex: -1,
+    };
+  });
 };
 
 // Create track group nodes for linear mode
@@ -457,14 +585,59 @@ const getTrackIcon = (track: string) => {
 };
 
 // Auto-layout logic using dagre for flow mode
-const applyAutoLayout = (mode: 'flow' | 'linear') => {
+const applyAutoLayout = (mode: 'flow' | 'linear' | 'sequential') => {
   if (mode === 'linear') {
-    // Linear layout: Simple vertical stacking
+    // Linear layout: Horizontal pages grouped by track
     applySimpleLinearLayout();
+  } else if (mode === 'sequential') {
+    // Sequential layout: Single horizontal line ordered by page number
+    applySequentialLayout();
   } else {
     // Flow layout: Use dagre for optimal graph layout
     applyDagreFlowLayout();
   }
+};
+
+// Sequential layout - Single horizontal line ordered by page number
+const applySequentialLayout = () => {
+  // Sort nodes by page number (P1, P2, P3, etc.)
+  const sortedNodes = [...nodes.value].sort((a, b) => {
+    const numA = parseInt(a.id.replace('P', ''));
+    const numB = parseInt(b.id.replace('P', ''));
+    return numA - numB;
+  });
+
+  const startX = 100;
+  const startY = 200;
+  const pageSpacing = 260;
+  const groupGap = 80; // Extra gap between different track groups
+  
+  let currentX = startX;
+  let previousTrack: string | null = null;
+
+  // Position all nodes in a single horizontal line with gaps between track changes
+  sortedNodes.forEach((node, index) => {
+    const currentTrack = node.data.track || 'core';
+    
+    // Add extra gap when track changes (except for first node)
+    if (previousTrack !== null && previousTrack !== currentTrack) {
+      currentX += groupGap;
+    }
+    
+    node.position = {
+      x: currentX,
+      y: startY,
+    };
+
+    // Clear track-specific positioning data
+    node.data.trackGroup = undefined;
+    node.data.trackRow = undefined;
+    node.data.branchInfo = undefined;
+    
+    // Move X for next node
+    currentX += pageSpacing;
+    previousTrack = currentTrack;
+  });
 };
 
 // Linear layout - Horizontal pages within track rows
@@ -591,11 +764,10 @@ const { fitView, onNodesInitialized } = useVueFlow();
 // Flag to track if we've done the initial fit
 const hasInitialFit = ref(false);
 
-// Toggle layout mode
-const toggleLayout = () => {
-  const newMode = layoutMode.value === 'flow' ? 'linear' : 'flow';
-  layoutMode.value = newMode;
-  applyAutoLayout(newMode);
+// Set layout mode
+const setLayoutMode = (mode: 'flow' | 'linear' | 'sequential') => {
+  layoutMode.value = mode;
+  applyAutoLayout(mode);
   
   // Auto-fit view after layout change (don't use hasInitialFit flag for manual toggles)
   setTimeout(() => {
@@ -852,9 +1024,9 @@ const nodes = ref([
 ]);
 
 // Displayed edges (filtered based on layout mode)
-const displayedEdges = computed(() => {
-  if (layoutMode.value === 'linear') {
-    return []; // No edges in linear mode
+const visibleEdges = computed(() => {
+  if (layoutMode.value === 'linear' || layoutMode.value === 'sequential') {
+    return []; // No edges in linear or sequential mode
   }
   return edges.value;
 });

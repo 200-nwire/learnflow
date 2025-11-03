@@ -222,7 +222,7 @@ interface Props {
   isSimulating: boolean;
   isComplete: boolean;
   activeRules: Rule[];
-  layoutMode?: 'flow' | 'linear';
+  layoutMode?: 'flow' | 'linear' | 'sequential';
 }
 
 interface Emits {
