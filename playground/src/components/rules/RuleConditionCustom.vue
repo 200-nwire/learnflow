@@ -58,26 +58,86 @@
           class="w-full"
         />
         
-        <!-- Boolean (checkbox) -->
-        <div v-else-if="selectedFact?.type === 'boolean'" class="flex items-center h-10">
-          <Checkbox
+        <!-- Boolean (toggle switch) -->
+        <div v-else-if="selectedFact?.type === 'boolean'" class="flex items-center gap-2 h-10">
+          <InputSwitch
             :modelValue="condition.value"
             @update:modelValue="handleValueChange"
-            :binary="true"
           />
-          <span class="ml-2 text-sm">{{ condition.value ? 'True' : 'False' }}</span>
+          <span class="text-sm font-medium" :class="condition.value ? 'text-green-600' : 'text-gray-500'">
+            {{ condition.value ? 'True' : 'False' }}
+          </span>
         </div>
         
-        <!-- Number -->
-        <InputNumber
-          v-else-if="selectedFact?.type === 'number'"
-          :modelValue="condition.value"
-          @update:modelValue="handleValueChange"
-          :minFractionDigits="0"
-          :maxFractionDigits="2"
-          placeholder="Enter number..."
-          class="w-full"
-        />
+        <!-- Number with specific ranges based on fact -->
+        <div v-else-if="selectedFact?.type === 'number'" class="space-y-1">
+          <!-- Accuracy/Engagement: 0-1 with slider + input -->
+          <div v-if="['accuracy', 'engagement'].includes(selectedFact.name)" class="space-y-1">
+            <div class="flex items-center gap-2">
+              <Slider
+                :modelValue="condition.value"
+                @update:modelValue="handleValueChange"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                class="flex-1"
+              />
+              <InputNumber
+                :modelValue="condition.value"
+                @update:modelValue="handleValueChange"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                :minFractionDigits="2"
+                :maxFractionDigits="2"
+                class="w-20"
+                size="small"
+              />
+            </div>
+            <div class="text-xs text-gray-500 text-center">
+              {{ (condition.value * 100).toFixed(0) }}%
+            </div>
+          </div>
+          
+          <!-- Time spent: seconds with suffix -->
+          <div v-else-if="selectedFact.name === 'timeSpent'" class="flex items-center gap-1">
+            <InputNumber
+              :modelValue="condition.value"
+              @update:modelValue="handleValueChange"
+              :min="0"
+              :max="7200"
+              :step="30"
+              placeholder="Seconds..."
+              class="flex-1"
+              showButtons
+            />
+            <span class="text-xs text-gray-500 whitespace-nowrap">seconds</span>
+          </div>
+          
+          <!-- Streak/Attempts: integer with buttons -->
+          <InputNumber
+            v-else-if="['streak', 'attempts'].includes(selectedFact.name)"
+            :modelValue="condition.value"
+            @update:modelValue="handleValueChange"
+            :min="0"
+            :max="100"
+            placeholder="Enter number..."
+            class="w-full"
+            showButtons
+            buttonLayout="horizontal"
+          />
+          
+          <!-- Default number input -->
+          <InputNumber
+            v-else
+            :modelValue="condition.value"
+            @update:modelValue="handleValueChange"
+            :minFractionDigits="0"
+            :maxFractionDigits="2"
+            placeholder="Enter number..."
+            class="w-full"
+          />
+        </div>
         
         <!-- Array -->
         <Chips
@@ -128,10 +188,12 @@ import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
+import InputSwitch from 'primevue/inputswitch';
+import Slider from 'primevue/slider';
 import Checkbox from 'primevue/checkbox';
 import Chips from 'primevue/chips';
 import Chip from 'primevue/chip';
-import { getOperatorsForType } from '@amit/rules-builder';
+import { getOperatorsForType, defaultOperators } from '@amit/rules-builder';
 import type { RuleCondition, RuleBuilderConfig, FactDefinition } from '@amit/rules-builder';
 
 interface Props {
@@ -154,7 +216,8 @@ const selectedFact = computed<FactDefinition | undefined>(() => {
 
 const availableOperators = computed(() => {
   if (!selectedFact.value) return [];
-  const operators = props.config.operators || [];
+  
+  const operators = props.config.operators || defaultOperators;
   return getOperatorsForType(selectedFact.value.type, operators);
 });
 
@@ -170,10 +233,63 @@ const conditionPreview = computed(() => {
 });
 
 const handleFactChange = (factName: string) => {
+  const fact = props.config.facts.find(f => f.name === factName);
+  
+  // Set appropriate default value and operator based on fact type
+  let defaultValue: any = '';
+  let defaultOperator: any = 'equal';
+  
+  if (fact) {
+    // Get available operators for this fact type
+    const operators = props.config.operators || defaultOperators;
+    const factOperators = getOperatorsForType(fact.type, operators);
+    
+    // Choose best default operator
+    if (fact.type === 'number') {
+      defaultOperator = factOperators.find(op => op.name === 'greaterThan')?.name || 'equal';
+    } else if (fact.type === 'boolean') {
+      defaultOperator = 'equal';
+    } else if (fact.type === 'array') {
+      defaultOperator = factOperators.find(op => op.name === 'contains')?.name || 'in';
+    } else {
+      defaultOperator = 'equal';
+    }
+    
+    // Set appropriate default value
+    switch (fact.type) {
+      case 'number':
+        if (['accuracy', 'engagement'].includes(fact.name)) {
+          defaultValue = 0.5; // Default to 50%
+        } else if (fact.name === 'timeSpent') {
+          defaultValue = 60; // Default to 1 minute
+        } else if (['streak', 'attempts'].includes(fact.name)) {
+          defaultValue = 3; // Default count
+        } else {
+          defaultValue = 0;
+        }
+        break;
+      case 'boolean':
+        defaultValue = false;
+        break;
+      case 'array':
+        defaultValue = [];
+        break;
+      case 'string':
+        if (fact.options && fact.options.length > 0) {
+          defaultValue = fact.options[0].value; // First option
+        } else {
+          defaultValue = '';
+        }
+        break;
+      default:
+        defaultValue = '';
+    }
+  }
+  
   emit('update', {
     fact: factName,
-    operator: 'equal',
-    value: '',
+    operator: defaultOperator,
+    value: defaultValue,
   });
 };
 

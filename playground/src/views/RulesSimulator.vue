@@ -441,7 +441,7 @@ import Tag from 'primevue/tag';
 import Accordion from 'primevue/accordion';
 import AccordionTab from 'primevue/accordiontab';
 import RuleBuilderCustom from '../components/rules/RuleBuilderCustom.vue';
-import { useRuleEngine } from '@amit/rules-builder';
+import { useRuleEngine, defaultOperators } from '@amit/rules-builder';
 import type { Rule, RuleBuilderConfig } from '@amit/rules-builder';
 
 const toast = useToast();
@@ -451,6 +451,7 @@ const isSimulating = ref(false);
 
 // E-learning specific configuration
 const builderConfig: RuleBuilderConfig = {
+  operators: defaultOperators,
   facts: [
     {
       name: 'accuracy',
