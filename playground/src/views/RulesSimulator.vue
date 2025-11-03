@@ -257,36 +257,6 @@
             </template>
           </Card>
 
-          <!-- Stats & Info -->
-          <Card>
-            <template #title>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-chart-bar text-blue-600"></i>
-                Rule Statistics
-              </div>
-            </template>
-            <template #content>
-              <div class="grid grid-cols-2 gap-3">
-                <div class="stat-item">
-                  <div class="text-2xl font-bold text-blue-600">{{ conditionCount }}</div>
-                  <div class="text-xs text-gray-600">Conditions</div>
-                </div>
-                <div class="stat-item">
-                  <div class="text-2xl font-bold text-purple-600">{{ groupCount }}</div>
-                  <div class="text-xs text-gray-600">Groups</div>
-                </div>
-                <div class="stat-item">
-                  <div class="text-2xl font-bold text-green-600">{{ maxDepth }}</div>
-                  <div class="text-xs text-gray-600">Max Depth</div>
-                </div>
-                <div class="stat-item">
-                  <div class="text-2xl font-bold text-orange-600">{{ simulationCount }}</div>
-                  <div class="text-xs text-gray-600">Simulations</div>
-                </div>
-              </div>
-            </template>
-          </Card>
-
           <!-- Use Cases -->
           <Card>
             <template #title>
