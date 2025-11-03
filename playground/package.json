@@ -10,6 +10,7 @@
   "dependencies": {
     "vue": "^3.5.11",
     "@amit/adaptivity": "workspace:*",
+    "@amit/rules-builder": "workspace:*",
     "primevue": "^3.53.1",
     "primeicons": "^7.0.0",
     "comlink": "^4.4.1",
@@ -19,7 +20,8 @@
     "@vue-flow/controls": "^1.1.1",
     "@vue-flow/minimap": "^1.4.0",
     "vue-router": "^4.2.5",
-    "dagre": "^0.8.5"
+    "dagre": "^0.8.5",
+    "json-rules-engine": "^6.5.0"
   },
   "devDependencies": {
     "vite": "^5.4.8",

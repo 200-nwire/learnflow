@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import SessionSimulator from '../views/SessionSimulator.vue';
 import FlowSimulator from '../views/FlowSimulator.vue';
+import RulesSimulator from '../views/RulesSimulator.vue';
 
 const routes = [
   {
@@ -14,6 +15,12 @@ const routes = [
     name: 'flow',
     component: FlowSimulator,
     meta: { title: 'Flow Simulator' }
+  },
+  {
+    path: '/rules',
+    name: 'rules',
+    component: RulesSimulator,
+    meta: { title: 'Rules Builder' }
   }
 ];
 

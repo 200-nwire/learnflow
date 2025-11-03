@@ -30,6 +30,14 @@
             @click="$router.push('/flow')"
             class="nav-button"
           />
+          <Button 
+            label="Rules Builder"
+            icon="pi pi-code"
+            :severity="$route.name === 'rules' ? 'info' : 'secondary'"
+            :text="$route.name !== 'rules'"
+            @click="$router.push('/rules')"
+            class="nav-button"
+          />
         </div>
 
         <!-- Right: Actions -->
