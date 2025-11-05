@@ -1,0 +1,526 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// Amit Lemida Platform - Complete Architecture
+// Multi-level C4 Model: Context → Container → Component + Deployment
+// ═══════════════════════════════════════════════════════════════════════════
+
+specification {
+  
+  element actor {
+    notation "User"
+    style {
+      shape person
+      color secondary
+    }
+  }
+  
+  element system {
+    notation "Software System"
+    style {
+      color primary
+    }
+  }
+  
+  element container {
+    notation "Container"
+    style {
+      color blue
+    }
+  }
+  
+  element component {
+    notation "Component"
+    style {
+      color green
+      opacity 40%
+    }
+  }
+  
+  element database {
+    notation "Database"
+    style {
+      shape storage
+      icon tech:mongodb
+      color muted
+    }
+  }
+  
+  element warehouse {
+    notation "Data Warehouse"
+    style {
+      shape storage
+      color blue
+    }
+  }
+  
+  element graphdb {
+    notation "Graph Database"
+    style {
+      shape storage
+      color secondary
+    }
+  }
+  
+  element cache {
+    notation "Cache"
+    style {
+      shape storage
+      icon tech:redis
+      color muted
+    }
+  }
+  
+  element queue {
+    notation "Queue"
+    style {
+      shape queue
+      color green
+    }
+  }
+  
+  element external {
+    notation "External System"
+    style {
+      color gray
+      opacity 50%
+    }
+  }
+}
+
+model {
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Level 1: System Context - Actors
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  student = actor "Student" {
+    description "Learner using the platform"
+  }
+  
+  teacher = actor "Teacher" {
+    description "Instructor and content creator"
+  }
+  
+  admin = actor "Admin" {
+    description "Platform administrator"
+  }
+  
+  dataScientist = actor "Data Scientist" {
+    description "Builds ML models from learning data"
+  }
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Level 1: System Context - External Systems
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  sso = external "Ministry SSO" {
+    description "Single Sign-On authentication"
+  }
+  
+  shahaf = external "Shahaf SIS" {
+    description "Student information system"
+  }
+  
+  firebase = external "Firebase" {
+    description "Auth and hosting"
+  }
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Level 1: System Context - Main Systems
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  lmsPlatform = system "LMS Platform" {
+    description "Core learning management system - operational runtime"
+    
+    // ───────────────────────────────────────────────────────────────────────
+    // Level 2: Container - Applications
+    // ───────────────────────────────────────────────────────────────────────
+    
+    studentApp = container "Student Portal" {
+      description "Vue 3 application for learners"
+      technology "Vue 3 + TypeScript"
+      icon tech:vue
+    }
+    
+    teacherApp = container "Teacher Console" {
+      description "Vue 3 application for content authoring"
+      technology "Vue 3 + TypeScript"
+      icon tech:vue
+    }
+    
+    apiGateway = container "API Gateway" {
+      description "REST API for all LMS operations"
+      technology "Node.js + NestJS"
+      icon tech:nodejs
+      
+      // ─────────────────────────────────────────────────────────────────────
+      // Level 3: Components
+      // ─────────────────────────────────────────────────────────────────────
+      
+      authController = component "Auth Controller" {
+        description "JWT tokens and session management"
+      }
+      
+      contentService = component "Content Service" {
+        description "Lessons, blocks, and variants"
+      }
+      
+      enrollmentService = component "Enrollment Service" {
+        description "Student assignments and progress"
+      }
+      
+      submissionService = component "Submission Service" {
+        description "Answers and grading"
+      }
+      
+      adaptiveEngine = component "Adaptive Engine" {
+        description "Real-time personalization decisions"
+      }
+      
+      telemetryEmitter = component "Telemetry Emitter" {
+        description "Event streaming to analytics"
+      }
+    }
+    
+    // ───────────────────────────────────────────────────────────────────────
+    // Level 2: Data Stores
+    // ───────────────────────────────────────────────────────────────────────
+    
+    mongodb = database "MongoDB Atlas" {
+      description "Primary operational data store"
+      technology "MongoDB"
+    }
+    
+    redis = cache "Redis Cache" {
+      description "Session and content caching"
+      technology "Redis"
+    }
+    
+    bullmq = queue "BullMQ" {
+      description "Async task processing"
+      technology "BullMQ"
+    }
+  }
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Intelligence & Analytics System
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  intelligencePlatform = system "Intelligence Platform" {
+    description "Learning analytics and ML infrastructure"
+    
+    // ───────────────────────────────────────────────────────────────────────
+    // Level 2: Container - Data Pipeline
+    // ───────────────────────────────────────────────────────────────────────
+    
+    telemetryStream = container "Telemetry Stream" {
+      description "Real-time event ingestion"
+      technology "Pub/Sub + Dataflow"
+    }
+    
+    dataform = container "Dataform" {
+      description "SQL transformations"
+      technology "Dataform"
+    }
+    
+    // ───────────────────────────────────────────────────────────────────────
+    // Level 2: Container - Storage (Medallion)
+    // ───────────────────────────────────────────────────────────────────────
+    
+    bronzeLayer = warehouse "Bronze Layer" {
+      description "Raw immutable data"
+      technology "BigQuery"
+    }
+    
+    silverLayer = warehouse "Silver Layer" {
+      description "Cleaned normalized data"
+      technology "BigQuery"
+    }
+    
+    goldLayer = warehouse "Gold Layer" {
+      description "Curated business metrics"
+      technology "BigQuery"
+    }
+    
+    neo4jGraph = graphdb "Neo4j Graph" {
+      description "Learning ontology and relationships"
+      technology "Neo4j AuraDB"
+    }
+    
+    // ───────────────────────────────────────────────────────────────────────
+    // Level 2: Container - Intelligence API
+    // ───────────────────────────────────────────────────────────────────────
+    
+    intelligenceApi = container "Intelligence API" {
+      description "Unified access to analytics data"
+      technology "NestJS + TypeScript"
+      icon tech:nodejs
+      
+      // ─────────────────────────────────────────────────────────────────────
+      // Level 3: Components
+      // ─────────────────────────────────────────────────────────────────────
+      
+      metricsService = component "Metrics Service" {
+        description "Query BigQuery for aggregated metrics"
+      }
+      
+      graphService = component "Graph Service" {
+        description "Query Neo4j for relationships"
+      }
+      
+      predictionService = component "Prediction Service" {
+        description "Serve ML model predictions"
+      }
+    }
+    
+    // ───────────────────────────────────────────────────────────────────────
+    // Level 2: Container - Analytics Tools
+    // ───────────────────────────────────────────────────────────────────────
+    
+    lookerStudio = container "Looker Studio" {
+      description "Teacher dashboards and reports"
+      technology "Looker"
+    }
+    
+    vertexAi = container "Vertex AI" {
+      description "ML models for predictions"
+      technology "Vertex AI"
+    }
+  }
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Level 1: Relationships - System Context
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  student -> lmsPlatform "Uses for learning"
+  teacher -> lmsPlatform "Creates content and views analytics"
+  admin -> lmsPlatform "Manages platform"
+  dataScientist -> intelligencePlatform "Explores data and trains models"
+  
+  lmsPlatform -> firebase "Authenticates via"
+  lmsPlatform -> sso "SSO integration"
+  lmsPlatform -> shahaf "Syncs student data"
+  lmsPlatform -> intelligencePlatform "Streams telemetry to"
+  
+  teacher -> intelligencePlatform "Views dashboards"
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Level 2: Relationships - LMS Containers
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  lmsPlatform.studentApp -> lmsPlatform.apiGateway "Calls API" "HTTPS/REST"
+  lmsPlatform.teacherApp -> lmsPlatform.apiGateway "Calls API" "HTTPS/REST"
+  
+  lmsPlatform.apiGateway -> lmsPlatform.mongodb "Reads/writes" "MongoDB Protocol"
+  lmsPlatform.apiGateway -> lmsPlatform.redis "Caches data" "Redis Protocol"
+  lmsPlatform.apiGateway -> lmsPlatform.bullmq "Queues tasks" "BullMQ"
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Level 3: Relationships - LMS Components
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  lmsPlatform.apiGateway.authController -> lmsPlatform.mongodb "User auth"
+  lmsPlatform.apiGateway.contentService -> lmsPlatform.mongodb "Lesson data"
+  lmsPlatform.apiGateway.enrollmentService -> lmsPlatform.mongodb "Enrollments"
+  lmsPlatform.apiGateway.submissionService -> lmsPlatform.mongodb "Student work"
+  lmsPlatform.apiGateway.submissionService -> lmsPlatform.bullmq "Grading jobs"
+  lmsPlatform.apiGateway.telemetryEmitter -> intelligencePlatform.telemetryStream "Streams events"
+  lmsPlatform.apiGateway.adaptiveEngine -> intelligencePlatform.intelligenceApi "Queries intelligence"
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Level 2: Relationships - Intelligence Containers
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  intelligencePlatform.telemetryStream -> intelligencePlatform.bronzeLayer "Ingests to"
+  lmsPlatform.mongodb -> intelligencePlatform.bronzeLayer "Daily export"
+  
+  intelligencePlatform.dataform -> intelligencePlatform.bronzeLayer "Reads from"
+  intelligencePlatform.dataform -> intelligencePlatform.silverLayer "Transforms to"
+  intelligencePlatform.dataform -> intelligencePlatform.goldLayer "Aggregates to"
+  
+  intelligencePlatform.silverLayer -> intelligencePlatform.neo4jGraph "Syncs to"
+  intelligencePlatform.goldLayer -> intelligencePlatform.neo4jGraph "Enriches"
+  
+  intelligencePlatform.goldLayer -> intelligencePlatform.intelligenceApi "Queries"
+  intelligencePlatform.neo4jGraph -> intelligencePlatform.intelligenceApi "Queries"
+  
+  intelligencePlatform.goldLayer -> intelligencePlatform.lookerStudio "Direct SQL"
+  intelligencePlatform.goldLayer -> intelligencePlatform.vertexAi "Training data"
+  intelligencePlatform.vertexAi -> intelligencePlatform.intelligenceApi "Predictions"
+  
+  // ═════════════════════════════════════════════════════════════════════════
+  // Level 3: Relationships - Intelligence Components
+  // ═════════════════════════════════════════════════════════════════════════
+  
+  intelligencePlatform.intelligenceApi.metricsService -> intelligencePlatform.goldLayer "Queries metrics"
+  intelligencePlatform.intelligenceApi.graphService -> intelligencePlatform.neo4jGraph "Cypher queries"
+  intelligencePlatform.intelligenceApi.predictionService -> intelligencePlatform.vertexAi "Gets predictions"
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Views - Multiple Perspectives & Levels
+// ═══════════════════════════════════════════════════════════════════════════
+
+views {
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // C1: System Context Level
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view systemContext {
+    title "System Context - Complete Platform"
+    description "C1: How users interact with the platform systems"
+    
+    include
+      student,
+      teacher,
+      admin,
+      dataScientist,
+      lmsPlatform,
+      intelligencePlatform,
+      firebase,
+      sso,
+      shahaf
+    
+    autoLayout TopBottom
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // C2: Container Level - LMS Platform
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view lmsContainers of lmsPlatform {
+    title "LMS Platform - Container View"
+    description "C2: Applications, APIs, and data stores"
+    
+    include *
+    
+    autoLayout TopBottom
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // C3: Component Level - API Gateway
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view apiComponents of lmsPlatform.apiGateway {
+    title "API Gateway - Component View"
+    description "C3: Internal services and components"
+    
+    include *
+    
+    autoLayout TopBottom
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // C2: Container Level - Intelligence Platform
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view intelligenceContainers of intelligencePlatform {
+    title "Intelligence Platform - Container View"
+    description "C2: Data pipeline, storage, and analytics"
+    
+    include *
+    
+    autoLayout LeftRight
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // C3: Component Level - Intelligence API
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view intelligenceComponents of intelligencePlatform.intelligenceApi {
+    title "Intelligence API - Component View"
+    description "C3: Internal API services"
+    
+    include *
+    
+    autoLayout TopBottom
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Focused View: Student Learning Flow
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view studentFlow {
+    title "Student Learning Flow"
+    description "How a student interacts with the system"
+    
+    include
+      student,
+      lmsPlatform.studentApp,
+      lmsPlatform.apiGateway,
+      lmsPlatform.apiGateway.contentService,
+      lmsPlatform.apiGateway.submissionService,
+      lmsPlatform.apiGateway.adaptiveEngine,
+      lmsPlatform.apiGateway.telemetryEmitter,
+      lmsPlatform.mongodb,
+      intelligencePlatform.telemetryStream,
+      intelligencePlatform.intelligenceApi
+    
+    autoLayout TopBottom
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Focused View: Data Pipeline
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view dataPipeline {
+    title "Data Pipeline - ELT Flow"
+    description "Bronze → Silver → Gold medallion architecture"
+    
+    include
+      lmsPlatform.mongodb,
+      lmsPlatform.apiGateway.telemetryEmitter,
+      intelligencePlatform.telemetryStream,
+      intelligencePlatform.bronzeLayer,
+      intelligencePlatform.dataform,
+      intelligencePlatform.silverLayer,
+      intelligencePlatform.goldLayer,
+      intelligencePlatform.neo4jGraph,
+      intelligencePlatform.lookerStudio,
+      intelligencePlatform.vertexAi
+    
+    autoLayout LeftRight
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Focused View: Teacher Analytics
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view teacherAnalytics {
+    title "Teacher Analytics Flow"
+    description "How teachers access insights"
+    
+    include
+      teacher,
+      lmsPlatform.teacherApp,
+      intelligencePlatform.lookerStudio,
+      intelligencePlatform.intelligenceApi,
+      intelligencePlatform.intelligenceApi.metricsService,
+      intelligencePlatform.intelligenceApi.graphService,
+      intelligencePlatform.goldLayer,
+      intelligencePlatform.neo4jGraph
+    
+    autoLayout TopBottom
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Focused View: Adaptive Personalization
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  view adaptiveFlow {
+    title "Adaptive Personalization"
+    description "How the adaptive engine makes decisions"
+    
+    include
+      student,
+      lmsPlatform.studentApp,
+      lmsPlatform.apiGateway.adaptiveEngine,
+      intelligencePlatform.intelligenceApi,
+      intelligencePlatform.intelligenceApi.predictionService,
+      intelligencePlatform.goldLayer,
+      intelligencePlatform.neo4jGraph,
+      intelligencePlatform.vertexAi
+    
+    autoLayout TopBottom
+  }
+}
