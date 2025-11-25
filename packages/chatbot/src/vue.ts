@@ -13,9 +13,9 @@ export { HTTPTransport, WebSocketTransport, SimulationTransport } from './compos
 export { useChatbot } from './composables/useChatbot.js';
 export { useChatbotWebSocket } from './composables/useChatbotWebSocket.js';
 
-// Components
-export { ChatMessage, ChatInput, ChatContainer, ChatbotStats, FloatingChatbot } from './components/index.js';
-
 // Types
 export type * from './types.js';
+
+// Note: Components are exported separately via the "./components" export path
+// Import them like: import { ChatMessage } from '@amit/chatbot/components'
 

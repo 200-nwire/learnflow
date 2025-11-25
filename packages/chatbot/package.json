@@ -16,12 +16,12 @@
       "types": "./dist/vue.d.ts"
     },
     "./components": {
-      "import": "./dist/components/index.js",
-      "types": "./dist/components/index.d.ts"
+      "import": "./src/components/index.ts",
+      "types": "./src/components/index.ts"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsup src/index.ts src/vue.ts src/components/index.ts --format esm,cjs --dts",
+    "build": "tsc -p tsconfig.json && tsup src/index.ts src/vue.ts --format esm,cjs --dts",
     "test": "vitest run",
     "dev:test": "vitest",
     "lint": "eslint ."
