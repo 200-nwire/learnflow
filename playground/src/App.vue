@@ -46,6 +46,14 @@
             @click="$router.push('/rules')"
             class="nav-button"
           />
+          <Button 
+            label="Chatbot"
+            icon="pi pi-comments"
+            :severity="$route.name === 'chatbot' ? 'info' : 'secondary'"
+            :text="$route.name !== 'chatbot'"
+            @click="$router.push('/chatbot')"
+            class="nav-button"
+          />
         </div>
 
         <!-- Right: Actions -->
@@ -62,11 +70,13 @@
     </div>
 
     <!-- Router View -->
-    <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
+    <div class="router-view-container">
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </div>
 
     <!-- Settings Drawer -->
     <SettingsDrawer 
@@ -133,13 +143,44 @@ provide('settingsVisible', settingsVisible);
 provide('session', session);
 </script>
 
+<style>
+/* Prevent body scrolling - fit to viewport */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+</style>
+
 <style scoped>
 .app-container {
   @apply min-h-screen bg-gray-100;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .top-bar {
   @apply bg-white shadow-md p-6 mb-6;
+  flex-shrink: 0;
+}
+
+.router-view-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .nav-button {

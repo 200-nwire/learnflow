@@ -70,13 +70,13 @@
             </template>
           </Card>
 
-          <!-- Signal Monitor -->
-          <SignalMonitor 
-            :stats="workerStats"
-            @sync="syncSignals"
-            @refresh="refreshWorkerStats"
-            @clear-synced="clearOldSignals"
+          <!-- Telemetry Monitor -->
+          <TelemetryMonitor 
+            :stats="telemetryStats"
           />
+
+          <!-- LRS Configuration -->
+          <LRSConfig />
 
           <!-- Event Dispatcher -->
           <EventDispatcher @event="handleEvent" />
@@ -209,40 +209,26 @@ import {
   selectVariant, 
   updateAccuracyEWMA,
   setPreferenceTheme,
-  SignalFactory,
   type SessionSnapshot,
   type Slot,
   type Policy,
   type SelectionResult,
-  type SignalType,
 } from '@amit/adaptivity';
+import { recordSignal, onSignal, useTelemetryStats, updateTelemetrySession } from '@amit/telemetry/vue';
+import { useSessionWorker } from '../composables/useSessionWorker';
 import SettingsDrawer from '../components/SettingsDrawer.vue';
 import EventDispatcher from '../components/EventDispatcher.vue';
 import BlockVariant from '../components/BlockVariant.vue';
 import PageNavigation from '../components/PageNavigation.vue';
-import SignalMonitor from '../components/SignalMonitor.vue';
+import TelemetryMonitor from '../components/TelemetryMonitor.vue';
+import LRSConfig from '../components/LRSConfig.vue';
 import type { Page } from '../components/PageNavigation.vue';
 
 const toast = useToast();
 const settingsVisible = inject('settingsVisible', ref(false));
 
-// Mock worker functionality
-const workerReady = ref(true);
-const updateWorkerSession = async (session: any) => {
-  console.log('Session updated:', session);
-};
-const logSignal = async (signal: any) => {
-  console.log('Signal logged:', signal);
-};
-const workerSyncSignals = async () => {
-  return { synced: 0, failed: 0 };
-};
-const getStats = async () => {
-  return { 
-    session: null,
-    outbox: { total: 0, synced: 0, unsynced: 0, byType: {} }
-  };
-};
+// Session worker (simplified - only session management)
+const { updateSession: updateWorkerSession, getSession: getWorkerSession } = useSessionWorker();
 
 // Session state
 const session = ref<SessionSnapshot>(createSnapshot({
@@ -270,9 +256,8 @@ const session = ref<SessionSnapshot>(createSnapshot({
 }));
 
 const selections = ref<Record<string, SelectionResult>>({});
-const workerStats = ref<any>(null);
+const telemetryStats = useTelemetryStats();
 const showHelpDialog = ref(false);
-const signalFactory = new SignalFactory();
 
 // Policy
 const policy: Policy = { version: 'v1.0.0' };
@@ -432,13 +417,24 @@ const selectVariantForSlot = (slot: Slot) => {
     guardPassed: result.why.guards[v.id] ?? true,
   }));
   
-  const signal = signalFactory.createVariantSelectedSignal(
-    session.value,
-    result,
-    alternatives
-  );
-  
-  logSignal(signal);
+  // Record signal using telemetry package
+  recordSignal("variant_selected", {
+    slotId: result.slotId,
+    variantId: result.variantId,
+    reason: result.why.overridesUsed ? "override" : result.why.stickyUsed ? "sticky" : "adaptive",
+    selectionResult: result,
+    alternatives,
+  }, {
+    source: "adaptivity",
+    priority: "normal",
+    metadata: {
+      userId: session.value.ids.userId,
+      courseId: session.value.ids.courseId,
+      lessonId: session.value.ids.lessonId,
+      pageId: session.value.ids.pageId,
+    },
+    tags: ["variant_selection", "adaptivity"],
+  });
   
   toast.add({
     severity: 'info',
@@ -448,28 +444,52 @@ const selectVariantForSlot = (slot: Slot) => {
   });
 };
 
-const handleEvent = ({ type, payload }: { type: SignalType; payload: any }) => {
+const handleEvent = ({ type, payload }: { type: string; payload: any }) => {
   if (type === 'answer_submitted') {
     updateAccuracyEWMA(session.value, payload.correct);
     
-    const signal = signalFactory.createAnswerSubmittedSignal(
-      session.value,
-      'practice_quiz',
-      selections.value['practice_quiz']?.variantId || 'unknown',
-      'q1',
-      payload.correct,
-      payload.timeTakenMs,
-      payload.attempts,
-      payload.answer
-    );
+    // Record signal using telemetry
+    recordSignal("answer_submitted", {
+      slotId: 'practice_quiz',
+      variantId: selections.value['practice_quiz']?.variantId || 'unknown',
+      questionId: payload.questionId || 'q1',
+      correct: payload.correct,
+      timeTakenMs: payload.timeTakenMs,
+      attempts: payload.attempts,
+      answer: payload.answer,
+    }, {
+      source: "adaptivity",
+      priority: "high",
+      metadata: {
+        userId: session.value.ids.userId,
+        courseId: session.value.ids.courseId,
+        lessonId: session.value.ids.lessonId,
+        pageId: session.value.ids.pageId,
+      },
+      tags: ["assessment", "answer"],
+    });
     
-    logSignal(signal);
     updateWorkerSession(session.value);
+  updateTelemetrySession(session.value);
     initializeSelections();
   } else if (type === 'preference_changed') {
     if (payload.preference === 'theme') {
       setPreferenceTheme(session.value, payload.value);
+      
+      recordSignal("preference_changed", {
+        preference: payload.preference,
+        value: payload.value,
+      }, {
+        source: "user_interaction",
+        priority: "normal",
+        metadata: {
+          userId: session.value.ids.userId,
+        },
+        tags: ["preference", "user_setting"],
+      });
+      
       updateWorkerSession(session.value);
+  updateTelemetrySession(session.value);
       clearSticky();
       initializeSelections();
     }
@@ -477,26 +497,54 @@ const handleEvent = ({ type, payload }: { type: SignalType; payload: any }) => {
     if (payload.action === 'increment_fatigue') {
       session.value.metrics.fatigue = Math.min(1, session.value.metrics.fatigue + payload.amount);
       updateWorkerSession(session.value);
+  updateTelemetrySession(session.value);
     }
+    
+    recordSignal("user_interaction", payload, {
+      source: "user_interaction",
+      priority: "normal",
+      metadata: {
+        userId: session.value.ids.userId,
+      },
+    });
+  } else {
+    // Generic signal
+    recordSignal(type, payload, {
+      source: "adaptivity",
+      priority: "normal",
+      metadata: {
+        userId: session.value.ids.userId,
+        courseId: session.value.ids.courseId,
+        lessonId: session.value.ids.lessonId,
+        pageId: session.value.ids.pageId,
+      },
+    });
   }
-  
-  const signal = signalFactory.createGenericSignal(type, session.value, payload);
-  logSignal(signal);
 };
 
 const handlePageChange = ({ from, to, direction, timeOnPageMs }: any) => {
   session.value.ids.pageId = to.id;
   
-  const signal = signalFactory.createPageNavigatedSignal(
-    session.value,
-    from.id,
-    to.id,
+  // Record signal using telemetry
+  recordSignal("page_navigated", {
+    fromPageId: from.id,
+    toPageId: to.id,
     direction,
-    timeOnPageMs
-  );
+    timeOnPageMs,
+  }, {
+    source: "adaptivity",
+    priority: "normal",
+    metadata: {
+      userId: session.value.ids.userId,
+      courseId: session.value.ids.courseId,
+      lessonId: session.value.ids.lessonId,
+      pageId: to.id,
+    },
+    tags: ["navigation", "page_change"],
+  });
   
-  logSignal(signal);
   updateWorkerSession(session.value);
+  updateTelemetrySession(session.value);
   initializeSelections();
   
   toast.add({
@@ -537,6 +585,7 @@ const resetSession = () => {
   selections.value = {};
   initializeSelections();
   updateWorkerSession(session.value);
+  updateTelemetrySession(session.value);
   
   toast.add({
     severity: 'info',
@@ -581,24 +630,18 @@ const exportSessionData = () => {
   });
 };
 
-const refreshWorkerStats = async () => {
-  workerStats.value = await getStats();
-};
-
-const clearOldSignals = async () => {
-  await refreshWorkerStats();
-};
-
-const syncSignals = async () => {
-  await workerSyncSignals();
-  await refreshWorkerStats();
-};
+// Telemetry stats are reactive via useTelemetryStats()
 
 onMounted(async () => {
   await updateWorkerSession(session.value);
+  // Update telemetry worker session for xAPI statement generation
+  await updateTelemetrySession(session.value);
   initializeSelections();
-  await refreshWorkerStats();
-  setInterval(refreshWorkerStats, 2000);
+  
+  // Subscribe to telemetry signals for debugging
+  onSignal((signal) => {
+    console.log('[Telemetry]', signal.type, signal.payload);
+  });
 });
 
 defineExpose({ session, settingsVisible });

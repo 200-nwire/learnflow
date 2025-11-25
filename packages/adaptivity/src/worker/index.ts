@@ -1,6 +1,9 @@
 /**
- * Worker entry point - export everything needed for worker setup
+ * Worker entry point - instantiate and expose the session worker
+ * This file is imported by the worker bundle to start the worker
+ * 
+ * When imported via: import "@amit/adaptivity/worker"
+ * This file will execute and expose the worker API via Comlink
  */
-export * from "./signal-outbox.js";
 export * from "./session-worker.js";
 

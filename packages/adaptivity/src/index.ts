@@ -5,4 +5,5 @@ export * from "./score.js";
 export * from "./select.js";
 export * from "./session.js";
 export * from "./sticky.js";
-export * from "./signals.js";
+// Signals moved to @amit/telemetry package
+export * from "./xapi/index.js";
