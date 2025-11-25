@@ -198,11 +198,13 @@ import SplitterPanel from 'primevue/splitterpanel';
 import Button from 'primevue/button';
 import { 
   useChat, 
-  WebSocketTransport,
+  WebSocketTransport
+} from '@amit/chatbot/vue';
+import { 
   FloatingChatbot, 
   ChatbotStats,
   ChatContainer
-} from '@amit/chatbot/vue';
+} from '@amit/chatbot/components';
 import type { ChatbotConfig, ChatMessage, ChatTransport } from '@amit/chatbot/vue';
 
 // Initial configuration
