@@ -25,7 +25,7 @@ export class HTTPTransport implements ChatTransport {
     try {
       const config = this.client.getConfig();
       if (config.streaming) {
-        await this.client.streamMessage(message, (chunk) => {
+        for await (const chunk of this.client.streamMessage(message)) {
           this.streamChunkHandlers.forEach(handler => {
             handler(chunk.content || '', chunk.done || false);
           });
@@ -35,7 +35,7 @@ export class HTTPTransport implements ChatTransport {
               handler('', chunk.metadata);
             });
           }
-        });
+        }
       } else {
         const response = await this.client.sendMessage(message);
         this.messageHandlers.forEach(handler => {
