@@ -1,0 +1,33 @@
+{
+  "name": "@amit/player-variants",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsup src/index.ts --format esm,cjs --dts",
+    "test": "vitest run",
+    "dev:test": "vitest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@amit/player-session": "workspace:*",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "tsup": "^8.0.2",
+    "vitest": "^2.1.1",
+    "@types/node": "^22.5.0",
+    "eslint": "^9.11.1"
+  }
+}
+

@@ -38,13 +38,50 @@
             </div>
 
             <div class="chatbot-simulator__config-field">
-              <label class="chatbot-simulator__label">Bot ID</label>
-              <input
-                v-model="config.botId"
-                type="text"
-                placeholder="Bot ID"
+              <label class="chatbot-simulator__label">Bot Selection</label>
+              <select
+                v-model="selectedBotType"
                 class="chatbot-simulator__input"
+                style="margin-bottom: 0.5rem;"
+              >
+                <option value="">Select a bot...</option>
+                <option
+                  v-for="bot in PREDEFINED_BOTS"
+                  :key="bot.id"
+                  :value="bot.id"
+                >
+                  {{ bot.icon }} {{ bot.name }}
+                </option>
+                <option value="custom">Custom Bot ID...</option>
+              </select>
+              
+              <!-- Custom Bot ID Input (shown when custom is selected) -->
+              <input
+                v-if="selectedBotType === 'custom'"
+                v-model="customBotId"
+                type="text"
+                placeholder="Enter Custom Bot ID"
+                class="chatbot-simulator__input"
+                style="margin-top: 0.5rem;"
               />
+              
+              <!-- Bot Description (shown when predefined bot is selected) -->
+              <div
+                v-if="selectedBotType && selectedBotType !== 'custom' && selectedBot"
+                class="chatbot-simulator__bot-description"
+                :style="{ 
+                  backgroundColor: selectedBot.color + '20', 
+                  border: `1px solid ${selectedBot.color}40`,
+                  marginTop: '0.5rem',
+                  padding: '0.5rem',
+                  borderRadius: '0.25rem',
+                  fontSize: '0.75rem'
+                }"
+              >
+                <div :style="{ color: selectedBot.color, fontWeight: '500' }">
+                  {{ selectedBot.description }}
+                </div>
+              </div>
             </div>
 
             <!-- Collapsible Metadata Section -->
@@ -207,9 +244,41 @@ import {
 } from '@amit/chatbot/components';
 import type { ChatbotConfig, ChatMessage, ChatTransport } from '@amit/chatbot/vue';
 
+// Predefined Bots
+const PREDEFINED_BOTS = [
+  {
+    id: 'ab20803f-812c-4a35-9afd-2ea734f6f953',
+    name: 'Gemini Live Avatar',
+    description: 'Live voice mode with Gemini AI and avatar',
+    icon: '🎭',
+    color: '#8B5CF6', // Purple
+  },
+  {
+    id: 'f886be30-15c0-4a61-9005-f4c1688e76f3',
+    name: 'Azure Avatar',
+    description: 'Azure TTS with avatar and lipsync',
+    icon: '🗣️',
+    color: '#0078D4', // Azure Blue
+  },
+  {
+    id: '48178aa3-deac-48de-b568-e1a2ef74839e',
+    name: 'Video Bot',
+    description: 'Video responses',
+    icon: '🎬',
+    color: '#EF4444', // Red
+  },
+  {
+    id: 'a8c39d93-078d-42e6-ad96-f5215c0b81af',
+    name: 'Text Bot',
+    description: 'Text-only chat without avatar',
+    icon: '💬',
+    color: '#10B981', // Green
+  },
+] as const;
+
 // Initial configuration
 const initialConfig: ChatbotConfig = {
-  endpoint: 'https://botgen-dev-1031090991817.me-west1.run.app',
+  endpoint: 'https://botgen-dev-105584895737.me-west1.run.app',
   token: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjdjNzQ5NTFmNjBhMDE0NzE3ZjFlMzA4ZDZiMjgwZjQ4ZjFlODhmZGEiLCJ0eXAiOiJKV1QifQ.eyJyb2xlIjpbInRlYWNoZXIiLCJlZGl0b3IiLCJhZG1pbiJdLCJzY2hvb2xJZHMiOlsiNjNjOTQ0YzkyNjEwOTE3M2VlNjdiNWM5IiwiNjNjOTQ0YzkyNjEwOTE3M2VlNjdiNWYwIiwiNjZiMjNkNDgxYWU0ZjIxODdjYTMxMGQzIl0sInllYXIiOjIwMjUsImZ1bGxOYW1lIjoi16nXmdeo15Qg15HXoNeq15XXqNeUIiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL2FtaXQtZGV2cyIsImF1ZCI6ImFtaXQtZGV2cyIsImF1dGhfdGltZSI6MTc2MDYzMjgxOCwidXNlcl9pZCI6IjYzYzk0NGNhMjYxMDkxNzNlZTY3YjYwYiIsInN1YiI6IjYzYzk0NGNhMjYxMDkxNzNlZTY3YjYwYiIsImlhdCI6MTc2NDAwMDc0MCwiZXhwIjoxNzY0MDA0MzQwLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7fSwic2lnbl9pbl9wcm92aWRlciI6ImN1c3RvbSJ9fQ.D4Iina0CN8wrW3mgoz542rc8zZWomTI7U2Kh1vOLNrP5px8Thfe6cxr8KmupC8mRKaF1P9aJUfv2AaP-Nmkbc7vaH3N_2PxDI__5RfZRYT40XyG0Ds_HWw66x0lh2zqo5sdy8zjO9myNXw8WQj1-K0i1Rqfeb8OdV-F1sAsGAwv3nA65P8w3aTYOkIRhWTyeR5vBQN3fWxC4RvdVe1bHBxx5t8SoArXSwjh3DyXbx4OPjiUKdLP15FOXN-jEyZS7s4fkeKvnQq5jZVHD0CwADweRF5izZ7tR_4TuN6mx_eRT3nJ1uM9IUcpOx2kJmGtRTj-ktU1hSXc_SV_CcUAOyg',
   streaming: true,
   timeout: 30000,
@@ -234,6 +303,84 @@ const testingConnection = ref(false);
 const connectionResult = ref<{ success: boolean; error?: string } | null>(null); // Stores last connection attempt result
 const metadataExpanded = ref(false); // Collapsed by default
 const uiExpanded = ref(false); // Collapsed by default
+
+// Bot selection state
+const selectedBotType = ref<string>('');
+const customBotId = ref('');
+
+// Computed: Get selected bot details
+const selectedBot = computed(() => {
+  if (!selectedBotType.value || selectedBotType.value === 'custom') {
+    return null;
+  }
+  return PREDEFINED_BOTS.find(bot => bot.id === selectedBotType.value);
+});
+
+// Watch for bot selection changes and update config.botId
+watch(selectedBotType, (newType) => {
+  if (newType === 'custom') {
+    // Use custom bot ID if available, otherwise clear
+    config.value.botId = customBotId.value || '';
+  } else if (newType && newType !== 'custom') {
+    // Set botId to the selected predefined bot
+    config.value.botId = newType;
+  } else {
+    config.value.botId = '';
+  }
+});
+
+// Watch for custom botId changes
+watch(customBotId, (newBotId) => {
+  if (selectedBotType.value === 'custom') {
+    config.value.botId = newBotId;
+    // Check if custom bot ID matches a predefined bot
+    const matchingBot = PREDEFINED_BOTS.find(bot => bot.id === newBotId);
+    if (matchingBot) {
+      // Auto-select the matching predefined bot
+      selectedBotType.value = matchingBot.id;
+      customBotId.value = '';
+    }
+  }
+});
+
+// Watch config.botId changes to sync with selection
+watch(() => config.value.botId, (newBotId) => {
+  // Only update selection if botId was changed externally (not by our watchers)
+  if (selectedBotType.value === 'custom' && newBotId === customBotId.value) {
+    return; // Already in sync
+  }
+  if (selectedBotType.value && selectedBotType.value !== 'custom' && newBotId === selectedBotType.value) {
+    return; // Already in sync
+  }
+  
+  // Check if it matches a predefined bot
+  const matchingBot = PREDEFINED_BOTS.find(bot => bot.id === newBotId);
+  if (matchingBot) {
+    selectedBotType.value = matchingBot.id;
+  } else if (newBotId) {
+    // It's a custom bot ID
+    selectedBotType.value = 'custom';
+    customBotId.value = newBotId;
+  } else {
+    // Clear selection
+    selectedBotType.value = '';
+    customBotId.value = '';
+  }
+});
+
+// Initialize bot selection from initial config
+const initializeBotSelection = () => {
+  const initialBotId = initialConfig.botId;
+  if (initialBotId) {
+    const matchingBot = PREDEFINED_BOTS.find((bot) => bot.id === initialBotId);
+    if (matchingBot) {
+      selectedBotType.value = matchingBot.id;
+    } else {
+      selectedBotType.value = 'custom';
+      customBotId.value = initialBotId;
+    }
+  }
+};
 
 // Core chat interface (transport-agnostic)
 const chat = useChat();
@@ -266,9 +413,49 @@ watch(() => config.value.botId, async (botId, oldBotId) => {
     // Connect on initial mount (oldBotId is undefined) or if botId changed
     const shouldConnect = oldBotId === undefined || (botId !== oldBotId);
     
-    if (shouldConnect && !wsTransport.isConnected.value) {
+    // If botId changed and we're connected, need to reinitialize
+    if (botId !== oldBotId && oldBotId && wsTransport.isConnected.value) {
+      console.log('[ChatbotSimulator] BotId changed, reinitializing...');
+      try {
+        // Update transport config FIRST with full config (before disconnect)
+        wsTransport.updateConfig(config.value);
+        
+        // Clear messages when switching bots
+        chat.messages.value = [];
+        
+        // Disconnect current connection
+        wsTransport.disconnect();
+        
+        // Wait a bit for disconnect to complete
+        await nextTick();
+        
+        // Reconnect with new bot
+        console.log('[ChatbotSimulator] Reconnecting with new botId:', botId);
+        await wsTransport.connect();
+        console.log('[ChatbotSimulator] Reconnect successful');
+        
+        // Wait for botInfo to be available
+        await nextTick();
+        
+        // Add welcome message if available
+        if (wsTransport.botInfo?.value?.welcome_message) {
+          console.log('[ChatbotSimulator] Adding welcome message for new bot');
+          chat.addMessage('assistant', wsTransport.botInfo.value.welcome_message, {
+            welcome: true,
+            botId: wsTransport.botInfo.value.id,
+          });
+        }
+      } catch (err) {
+        console.error('[ChatbotSimulator] Reconnect failed:', err);
+        connectionResult.value = { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    } else if (shouldConnect && !wsTransport.isConnected.value) {
       try {
         console.log('[ChatbotSimulator] Auto-connecting with botId:', botId);
+        
+        // Update transport config with full config (including botId)
+        wsTransport.updateConfig(config.value);
+        
         await wsTransport.connect();
         console.log('[ChatbotSimulator] Auto-connect successful');
         console.log('[ChatbotSimulator] botInfo after connect:', wsTransport.botInfo?.value);
@@ -292,15 +479,7 @@ watch(() => config.value.botId, async (botId, oldBotId) => {
         }
       } catch (err) {
         console.error('[ChatbotSimulator] Auto-connect failed:', err);
-      }
-    } else if (wsTransport.isConnected.value && botId !== oldBotId) {
-      // Reconnect if botId changed
-      console.log('[ChatbotSimulator] BotId changed, reconnecting...');
-      wsTransport.disconnect();
-      try {
-        await wsTransport.connect();
-      } catch (err) {
-        console.error('[ChatbotSimulator] Reconnect failed:', err);
+        connectionResult.value = { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     } else {
       console.log('[ChatbotSimulator] Already connected, skipping auto-connect');
@@ -653,6 +832,9 @@ function injectMessageWithSuggestions() {
 }
 
 onMounted(async () => {
+  // Initialize bot selection from config
+  initializeBotSelection();
+  
   // Initialize transport (connection happens in watch)
   currentTransport.value;
 });

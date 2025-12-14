@@ -54,6 +54,14 @@
             @click="$router.push('/chatbot')"
             class="nav-button"
           />
+          <Button 
+            label="Chatbot V2"
+            icon="pi pi-comments"
+            :severity="$route.name === 'chatbot-v2' ? 'info' : 'secondary'"
+            :text="$route.name !== 'chatbot-v2'"
+            @click="$router.push('/chatbot-v2')"
+            class="nav-button"
+          />
         </div>
 
         <!-- Right: Actions -->
@@ -81,7 +89,7 @@
     <!-- Settings Drawer -->
     <SettingsDrawer 
       v-model:visible="settingsVisible"
-      :session="session"
+      :session="session.session"
       @update:session="updateSession"
     />
 
@@ -97,39 +105,52 @@ import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import Toast from 'primevue/toast';
 import SettingsDrawer from './components/SettingsDrawer.vue';
-import { createSnapshot, type SessionSnapshot } from '@amit/adaptivity';
+import { useSession, type SessionSnapshot } from '@amit/player-session';
 
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 
 const settingsVisible = ref(false);
-const session = ref<SessionSnapshot>(createSnapshot({
-  ids: { 
-    userId: 'student_001', 
-    courseId: 'math_101', 
-    lessonId: 'fractions', 
-    pageId: 'page_1',
-    attemptId: `attempt_${Date.now()}`,
-  },
-  user: { 
-    lang: 'en',
-    preferences: { 
-      theme: { value: 'soccer', source: 'student' } 
+const session = useSession({
+  snapshot: {
+    ids: { 
+      userId: 'student_001', 
+      courseId: 'math_101', 
+      lessonId: 'fractions', 
+      pageId: 'page_1',
+      attemptId: `attempt_${Date.now()}`,
+    },
+    user: { 
+      lang: 'en',
+      preferences: { 
+        theme: { value: 'soccer', source: 'student' } 
+      },
+    },
+    env: {
+      device: 'desktop',
+      online: navigator.onLine,
+    },
+    metrics: {
+      accEWMA: 0.75,
+      latencyEWMA: 2000,
+      idleSec: 0,
+      streak: 2,
+      fatigue: 0.1,
+      attempts: 5,
+    },
+    perSkill: {},
+    sticky: {},
+    seenVariants: {},
+    policy: {
+      version: 'v1.0.0',
     },
   },
-  metrics: {
-    accEWMA: 0.75,
-    latencyEWMA: 2000,
-    idleSec: 0,
-    streak: 2,
-    fatigue: 0.1,
-    attempts: 5,
-  },
-}));
+  policyVersion: 'v1.0.0',
+});
 
 const updateSession = (newSession: SessionSnapshot) => {
-  session.value = newSession;
+  session.initFrom({ snapshot: newSession });
   toast.add({
     severity: 'success',
     summary: 'Session Updated',
@@ -140,7 +161,7 @@ const updateSession = (newSession: SessionSnapshot) => {
 
 // Provide settings visibility to child components
 provide('settingsVisible', settingsVisible);
-provide('session', session);
+provide('session', session.session);
 </script>
 
 <style>

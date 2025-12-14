@@ -196,7 +196,7 @@ const worker = getTelemetryWorker();
 
 const config = ref({
   enabled: false,
-  endpoint: 'http://127.0.0.1:8000/trax/api/gateway/clients/default/stores/default/xapi',
+  endpoint: 'https://lrs.dev.svc.amit-lemida.com/trax/api/gateway/clients/default/stores/default/xapi',
   username: 'traxlrs',
   password: 'aaaaaaaa',
   authToken: '',

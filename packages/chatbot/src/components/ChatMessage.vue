@@ -259,84 +259,91 @@ const timeAgo = computed(() => {
   margin-left: 1.25rem;
 }
 
-/* Markdown styles for bubbles */
+/* ============================================
+   MARKDOWN STYLES - Polished & Theme-Aligned
+   ============================================ */
+
+/* Headings - Better hierarchy and spacing */
 .chat-message__bubble :deep(h1),
 .chat-message__bubble :deep(h2),
 .chat-message__bubble :deep(h3),
 .chat-message__bubble :deep(h4),
 .chat-message__bubble :deep(h5),
 .chat-message__bubble :deep(h6) {
-  margin-top: 0.5em;
+  margin-top: 0.75em;
   margin-bottom: 0.5em;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.3;
+  color: inherit;
 }
 
-/* Markdown styles for full-width assistant */
+.chat-message__bubble :deep(h1) {
+  font-size: 1.5em;
+  margin-top: 0.5em;
+}
+
+.chat-message__bubble :deep(h2) {
+  font-size: 1.3em;
+}
+
+.chat-message__bubble :deep(h3) {
+  font-size: 1.15em;
+}
+
+.chat-message__bubble :deep(h4),
+.chat-message__bubble :deep(h5),
+.chat-message__bubble :deep(h6) {
+  font-size: 1.05em;
+}
+
+/* Full-width assistant headings */
 .chat-message__assistant-content :deep(h1),
 .chat-message__assistant-content :deep(h2),
 .chat-message__assistant-content :deep(h3),
 .chat-message__assistant-content :deep(h4),
 .chat-message__assistant-content :deep(h5),
 .chat-message__assistant-content :deep(h6) {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.75em;
+  font-weight: 700;
+  line-height: 1.3;
+  color: rgba(17, 24, 39, 1);
 }
 
-.chat-message__assistant-content :deep(ul),
-.chat-message__assistant-content :deep(ol) {
-  margin: 0.75em 0;
-  padding-left: 1.5em;
+.chat-message__assistant-content :deep(h1) {
+  font-size: 1.75em;
+  border-bottom: 2px solid rgba(229, 231, 235, 1);
+  padding-bottom: 0.5em;
 }
 
-.chat-message__assistant-content :deep(li) {
-  margin: 0.5em 0;
+.chat-message__assistant-content :deep(h2) {
+  font-size: 1.5em;
+  border-bottom: 1px solid rgba(229, 231, 235, 1);
+  padding-bottom: 0.375em;
+}
+
+.chat-message__assistant-content :deep(h3) {
+  font-size: 1.25em;
+}
+
+/* Paragraphs - Better spacing */
+.chat-message__bubble :deep(p) {
+  margin: 0.625em 0;
+  line-height: 1.7;
 }
 
 .chat-message__assistant-content :deep(p) {
-  margin: 0.75em 0;
+  margin: 0.875em 0;
+  line-height: 1.75;
+  color: rgba(55, 65, 81, 1);
 }
 
-.chat-message__assistant-content :deep(strong),
-.chat-message__assistant-content :deep(b) {
-  font-weight: 600;
-}
-
-.chat-message__assistant-content :deep(em),
-.chat-message__assistant-content :deep(i) {
-  font-style: italic;
-}
-
-.chat-message__assistant-content :deep(a) {
-  color: rgba(59, 130, 246, 1);
-  text-decoration: underline;
-}
-
-.chat-message__assistant-content :deep(code) {
-  background-color: rgba(243, 244, 246, 1);
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-  font-family: monospace;
-  font-size: 0.875em;
-}
-
-.chat-message__assistant-content :deep(pre) {
-  background-color: rgba(243, 244, 246, 1);
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-  margin: 0.75em 0;
-}
-
-.chat-message__assistant-content :deep(pre code) {
-  background-color: transparent;
-  padding: 0;
-}
-
+/* Lists - RTL/LTR aware with proper indentation */
 .chat-message__bubble :deep(ul),
 .chat-message__bubble :deep(ol) {
-  margin: 0.5em 0;
-  padding-left: 1.5em;
+  margin: 0.625em 0;
+  padding-inline-start: 1.75em; /* RTL/LTR aware */
+  padding-inline-end: 0;
 }
 
 .chat-message__bubble--assistant :deep(ul),
@@ -344,17 +351,107 @@ const timeAgo = computed(() => {
   color: white;
 }
 
+.chat-message__assistant-content :deep(ul),
+.chat-message__assistant-content :deep(ol) {
+  margin: 0.875em 0;
+  padding-inline-start: 2em; /* RTL/LTR aware */
+  padding-inline-end: 0;
+}
+
+/* List items - Better spacing and nested support */
 .chat-message__bubble :deep(li) {
+  margin: 0.375em 0;
+  line-height: 1.6;
+  padding-inline-start: 0.25em;
+}
+
+.chat-message__bubble :deep(li > p) {
   margin: 0.25em 0;
 }
 
-.chat-message__bubble :deep(p) {
-  margin: 0.5em 0;
+.chat-message__bubble :deep(li > ul),
+.chat-message__bubble :deep(li > ol) {
+  margin: 0.375em 0;
+  padding-inline-start: 1.5em;
 }
 
+.chat-message__assistant-content :deep(li) {
+  margin: 0.5em 0;
+  line-height: 1.7;
+  padding-inline-start: 0.375em;
+}
+
+.chat-message__assistant-content :deep(li > p) {
+  margin: 0.375em 0;
+}
+
+.chat-message__assistant-content :deep(li > ul),
+.chat-message__assistant-content :deep(li > ol) {
+  margin: 0.5em 0;
+  padding-inline-start: 1.75em;
+}
+
+/* Unordered list markers - Better styling */
+.chat-message__bubble :deep(ul) {
+  list-style-type: disc;
+}
+
+.chat-message__bubble :deep(ul ul) {
+  list-style-type: circle;
+}
+
+.chat-message__bubble :deep(ul ul ul) {
+  list-style-type: square;
+}
+
+.chat-message__assistant-content :deep(ul) {
+  list-style-type: disc;
+}
+
+.chat-message__assistant-content :deep(ul ul) {
+  list-style-type: circle;
+}
+
+.chat-message__assistant-content :deep(ul ul ul) {
+  list-style-type: square;
+}
+
+/* Ordered list markers */
+.chat-message__bubble :deep(ol) {
+  list-style-type: decimal;
+}
+
+.chat-message__bubble :deep(ol ol) {
+  list-style-type: lower-alpha;
+}
+
+.chat-message__bubble :deep(ol ol ol) {
+  list-style-type: lower-roman;
+}
+
+.chat-message__assistant-content :deep(ol) {
+  list-style-type: decimal;
+}
+
+.chat-message__assistant-content :deep(ol ol) {
+  list-style-type: lower-alpha;
+}
+
+.chat-message__assistant-content :deep(ol ol ol) {
+  list-style-type: lower-roman;
+}
+
+/* Text formatting */
 .chat-message__bubble :deep(strong),
 .chat-message__bubble :deep(b) {
-  font-weight: 600;
+  font-weight: 700;
+  color: inherit;
+}
+
+.chat-message__assistant-content :deep(strong),
+.chat-message__assistant-content :deep(b) {
+  font-weight: 700;
+  color: rgba(17, 24, 39, 1);
 }
 
 .chat-message__bubble :deep(em),
@@ -362,44 +459,226 @@ const timeAgo = computed(() => {
   font-style: italic;
 }
 
+.chat-message__assistant-content :deep(em),
+.chat-message__assistant-content :deep(i) {
+  font-style: italic;
+  color: rgba(55, 65, 81, 1);
+}
+
+/* Links - Theme-aligned blue */
 .chat-message__bubble :deep(a) {
-  color: inherit;
-  text-decoration: underline;
-  opacity: 0.9;
+  color: rgba(59, 130, 246, 1);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+}
+
+.chat-message__bubble :deep(a:hover) {
+  color: rgba(37, 99, 235, 1);
+  border-bottom-color: rgba(37, 99, 235, 0.6);
 }
 
 .chat-message__bubble--assistant :deep(a) {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(147, 197, 253, 1);
+  border-bottom-color: rgba(147, 197, 253, 0.5);
 }
 
+.chat-message__bubble--assistant :deep(a:hover) {
+  color: rgba(191, 219, 254, 1);
+  border-bottom-color: rgba(191, 219, 254, 0.7);
+}
+
+.chat-message__assistant-content :deep(a) {
+  color: rgba(59, 130, 246, 1);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.chat-message__assistant-content :deep(a:hover) {
+  color: rgba(37, 99, 235, 1);
+  border-bottom-color: rgba(37, 99, 235, 0.6);
+}
+
+/* Inline code - Better styling */
 .chat-message__bubble :deep(code) {
-  background-color: rgba(0, 0, 0, 0.1);
-  padding: 0.125rem 0.25rem;
+  background-color: rgba(0, 0, 0, 0.08);
+  padding: 0.1875rem 0.375rem;
   border-radius: 0.25rem;
-  font-family: monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
   font-size: 0.875em;
+  font-weight: 500;
+  color: inherit;
 }
 
 .chat-message__bubble--assistant :deep(code) {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.chat-message__assistant-content :deep(code) {
+  background-color: rgba(243, 244, 246, 1);
+  padding: 0.1875rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-size: 0.875em;
+  font-weight: 500;
+  color: rgba(220, 38, 127, 1); /* Pink for code text */
+  border: 1px solid rgba(229, 231, 235, 1);
+}
+
+/* Code blocks - Polished styling */
+.chat-message__bubble :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.08);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.75em 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  line-height: 1.6;
+}
+
+.chat-message__bubble--assistant :deep(pre) {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.chat-message__assistant-content :deep(pre) {
+  background-color: rgba(17, 24, 39, 1);
+  padding: 1.125rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1em 0;
+  border: 1px solid rgba(229, 231, 235, 1);
+  line-height: 1.6;
+}
+
+.chat-message__bubble :deep(pre code),
+.chat-message__assistant-content :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  color: inherit;
+  font-size: 0.875em;
+  display: block;
+  white-space: pre;
+}
+
+.chat-message__assistant-content :deep(pre code) {
+  color: rgba(229, 231, 241, 1);
+}
+
+/* Blockquotes - Styled with left border */
+.chat-message__bubble :deep(blockquote) {
+  margin: 0.75em 0;
+  padding: 0.625em 1em;
+  padding-inline-start: 1em;
+  border-inline-start: 4px solid rgba(59, 130, 246, 0.5);
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 0 0.25rem 0.25rem 0;
+  font-style: italic;
+  color: inherit;
+}
+
+.chat-message__bubble--assistant :deep(blockquote) {
+  border-inline-start-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.chat-message__assistant-content :deep(blockquote) {
+  margin: 1em 0;
+  padding: 0.875em 1.25em;
+  padding-inline-start: 1.25em;
+  border-inline-start: 4px solid rgba(59, 130, 246, 0.6);
+  background-color: rgba(239, 246, 255, 1);
+  border-radius: 0 0.375rem 0.375rem 0;
+  font-style: italic;
+  color: rgba(55, 65, 81, 1);
+}
+
+.chat-message__bubble :deep(blockquote p),
+.chat-message__assistant-content :deep(blockquote p) {
+  margin: 0.5em 0;
+}
+
+.chat-message__bubble :deep(blockquote p:first-child),
+.chat-message__assistant-content :deep(blockquote p:first-child) {
+  margin-top: 0;
+}
+
+.chat-message__bubble :deep(blockquote p:last-child),
+.chat-message__assistant-content :deep(blockquote p:last-child) {
+  margin-bottom: 0;
+}
+
+/* Horizontal rules */
+.chat-message__bubble :deep(hr),
+.chat-message__assistant-content :deep(hr) {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 2px solid rgba(229, 231, 235, 1);
+  background: none;
+}
+
+.chat-message__bubble--assistant :deep(hr) {
+  border-top-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Tables - Polished styling */
+.chat-message__bubble :deep(table),
+.chat-message__assistant-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.9375em;
+}
+
+.chat-message__bubble :deep(th),
+.chat-message__bubble :deep(td),
+.chat-message__assistant-content :deep(th),
+.chat-message__assistant-content :deep(td) {
+  padding: 0.625em 0.875em;
+  text-align: start;
+  border: 1px solid rgba(229, 231, 235, 1);
+}
+
+.chat-message__bubble--assistant :deep(th),
+.chat-message__bubble--assistant :deep(td) {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.chat-message__bubble :deep(th),
+.chat-message__assistant-content :deep(th) {
+  background-color: rgba(243, 244, 246, 1);
+  font-weight: 700;
+  color: rgba(17, 24, 39, 1);
+}
+
+.chat-message__bubble--assistant :deep(th) {
   background-color: rgba(255, 255, 255, 0.2);
   color: white;
 }
 
-.chat-message__bubble :deep(pre) {
-  background-color: rgba(0, 0, 0, 0.1);
-  padding: 0.75rem;
+.chat-message__assistant-content :deep(tr:nth-child(even)) {
+  background-color: rgba(249, 250, 251, 1);
+}
+
+.chat-message__bubble--assistant :deep(tr:nth-child(even)) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Images */
+.chat-message__bubble :deep(img),
+.chat-message__assistant-content :deep(img) {
+  max-width: 100%;
+  height: auto;
   border-radius: 0.5rem;
-  overflow-x: auto;
-  margin: 0.5em 0;
+  margin: 1em 0;
 }
 
-.chat-message__bubble--assistant :deep(pre) {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.chat-message__bubble :deep(pre code) {
-  background-color: transparent;
-  padding: 0;
+.chat-message__assistant-content :deep(img) {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* Plain text rendering (when markdown is disabled) */

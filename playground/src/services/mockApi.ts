@@ -1,7 +1,7 @@
 /**
  * Mock API service for simulating backend signal syncing
  */
-import type { Signal } from "@amit/adaptivity";
+import type { Signal } from "@amit/player-signals";
 
 export interface ApiResponse<T = any> {
   success: boolean;

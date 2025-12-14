@@ -8,10 +8,12 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@amit/adaptivity": "workspace:*",
+    "@amit/player-signals": "workspace:*",
+    "@amit/player-session": "workspace:*",
+    "@amit/player-variants": "workspace:*",
     "@amit/rules-builder": "workspace:*",
-    "@amit/telemetry": "workspace:*",
     "@amit/chatbot": "workspace:*",
+    "@amit-org-il/chat-vue": "^1.0.4",
     "@xapi/xapi": "^3.0.1",
     "@heroicons/vue": "^2.2.0",
     "@vue-flow/background": "^1.3.0",

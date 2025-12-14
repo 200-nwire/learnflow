@@ -203,7 +203,7 @@ import Dropdown from 'primevue/dropdown';
 import Slider from 'primevue/slider';
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
-import type { SessionSnapshot } from '@amit/adaptivity';
+import type { SessionSnapshot } from '@amit/player-session';
 
 interface Props {
   visible: boolean;

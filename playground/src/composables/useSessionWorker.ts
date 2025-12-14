@@ -5,8 +5,8 @@
  */
 import { ref, onUnmounted } from "vue";
 import { wrap, type Remote } from "comlink";
-import type { SessionWorkerAPI } from "@amit/adaptivity/worker";
-import type { SessionSnapshot } from "@amit/adaptivity";
+import type { SessionSnapshot } from "@amit/player-session";
+// Note: SessionWorkerAPI is no longer needed - use @amit/player-session's useSession() instead
 
 let workerInstance: Worker | null = null;
 let workerApi: Remote<SessionWorkerAPI> | null = null;

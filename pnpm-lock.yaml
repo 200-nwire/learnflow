@@ -74,6 +74,93 @@ importers:
         specifier: ^3.5.11
         version: 3.5.22(typescript@5.9.3)
 
+  packages/player-session:
+    dependencies:
+      vue:
+        specifier: ^3.4.0
+        version: 3.5.22(typescript@5.9.3)
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.5.0
+        version: 22.18.13
+      eslint:
+        specifier: ^9.11.1
+        version: 9.39.0(jiti@1.21.7)
+      tsup:
+        specifier: ^8.0.2
+        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.9(@types/node@22.18.13)(happy-dom@12.10.3)(jsdom@23.2.0)(lightningcss@1.25.1)
+
+  packages/player-signals:
+    dependencies:
+      '@xapi/xapi':
+        specifier: ^3.0.1
+        version: 3.0.2
+      comlink:
+        specifier: ^4.4.1
+        version: 4.4.2
+      idb:
+        specifier: ^8.0.0
+        version: 8.0.3
+      p-queue:
+        specifier: ^8.0.1
+        version: 8.1.1
+      vue:
+        specifier: ^3.4.0
+        version: 3.5.22(typescript@5.9.3)
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.5.0
+        version: 22.18.13
+      eslint:
+        specifier: ^9.11.1
+        version: 9.39.0(jiti@1.21.7)
+      tsup:
+        specifier: ^8.0.2
+        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.9(@types/node@22.18.13)(happy-dom@12.10.3)(jsdom@23.2.0)(lightningcss@1.25.1)
+
+  packages/player-variants:
+    dependencies:
+      '@amit/player-session':
+        specifier: workspace:*
+        version: link:../player-session
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.5.0
+        version: 22.18.13
+      eslint:
+        specifier: ^9.11.1
+        version: 9.39.0(jiti@1.21.7)
+      tsup:
+        specifier: ^8.0.2
+        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.9(@types/node@22.18.13)(happy-dom@12.10.3)(jsdom@23.2.0)(lightningcss@1.25.1)
+
   packages/rules-builder:
     dependencies:
       json-rules-engine:
@@ -144,18 +231,24 @@ importers:
 
   playground:
     dependencies:
-      '@amit/adaptivity':
-        specifier: workspace:*
-        version: link:../packages/adaptivity
+      '@amit-org-il/chat-vue':
+        specifier: ^1.0.4
+        version: 1.0.4(dompurify@3.3.0)(vue@3.5.22(typescript@5.9.3))
       '@amit/chatbot':
         specifier: workspace:*
         version: link:../packages/chatbot
+      '@amit/player-session':
+        specifier: workspace:*
+        version: link:../packages/player-session
+      '@amit/player-signals':
+        specifier: workspace:*
+        version: link:../packages/player-signals
+      '@amit/player-variants':
+        specifier: workspace:*
+        version: link:../packages/player-variants
       '@amit/rules-builder':
         specifier: workspace:*
         version: link:../packages/rules-builder
-      '@amit/telemetry':
-        specifier: workspace:*
-        version: link:../packages/telemetry
       '@heroicons/vue':
         specifier: ^2.2.0
         version: 2.2.0(vue@3.5.22(typescript@5.9.3))
@@ -272,6 +365,19 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
+
+  '@amit-org-il/chat-core@1.0.4':
+    resolution: {integrity: sha512-ky1zRWBssn1ecZmyKZBU7Xic0zzyHPNyWKGAQQZBwbVu5fJ+K/szIAiwvDgBw/auVqTHtTHdWSo7oscIzlOvxQ==, tarball: https://npm.pkg.github.com/download/@amit-org-il/chat-core/1.0.4/333bef663c0f9c7a407ee4469b1a5dfeca9ede62}
+    peerDependencies:
+      dompurify: ^3.0.0
+    peerDependenciesMeta:
+      dompurify:
+        optional: true
+
+  '@amit-org-il/chat-vue@1.0.4':
+    resolution: {integrity: sha512-so2QS8hrQKl8sI0ESASbTmQFspT1zM0Aol1ZJD89HSvS/jmuWXlGfGgzdAAho2II8ayDRPA4SLahUgm2xjiurw==, tarball: https://npm.pkg.github.com/download/@amit-org-il/chat-vue/1.0.4/669879ba54ec295585cec52044b49892f8cc55e4}
+    peerDependencies:
+      vue: ^3.3.0
 
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
@@ -1058,6 +1164,9 @@ packages:
   '@types/react@19.2.2':
     resolution: {integrity: sha512-6mDvHUFSjyT2B2yeNx2nUgMxh9LtOWvkhIU3uePn2I2oyNymUAX1NIsdgviM4CH+JSrp2D2hsMvJOkxY+0wNRA==}
 
+  '@types/trusted-types@2.0.7':
+    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
   '@types/uuid@9.0.8':
     resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
 
@@ -1652,6 +1761,9 @@ packages:
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
 
+  dompurify@3.3.0:
+    resolution: {integrity: sha512-r+f6MYR1gGN1eJv0TVQbhA7if/U7P87cdPl3HN5rikqaBSBxLiCb/b9O+2eG0cxz0ghyU+mU1QkbsOwERMYlWQ==}
+
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -1783,6 +1895,9 @@ packages:
 
   eventemitter2@6.4.9:
     resolution: {integrity: sha512-JEPTiaOt9f04oa6NOkc4aH+nVp5I3wEjpHbIPqfgCdD5v5bUzy7xQqwcVO2aDQgOWhI28da57HksMrzK9HlRxg==}
+
+  eventemitter3@5.0.1:
+    resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
 
   execa@8.0.1:
     resolution: {integrity: sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==}
@@ -2306,6 +2421,11 @@ packages:
     resolution: {integrity: sha512-IODjyQuedEjZkUoILLHOvPvG1CEyDECr8bja5VLTwQ2UD0wGSA9guNrD+ko8t5LLR1dglcBTEsMw9iYt7Ngrsg==}
     engines: {node: '>=18'}
 
+  marked@15.0.12:
+    resolution: {integrity: sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==}
+    engines: {node: '>= 18'}
+    hasBin: true
+
   marked@17.0.0:
     resolution: {integrity: sha512-KkDYEWEEiYJw/KC+DVm1zzlpMQSMIu6YRltkcCvwheCp8HWPXCk9JwOmHJKBlGfzcpzcIt6x3sMnTsRm/51oDg==}
     engines: {node: '>= 20'}
@@ -2437,6 +2557,14 @@ packages:
   p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
+
+  p-queue@8.1.1:
+    resolution: {integrity: sha512-aNZ+VfjobsWryoiPnEApGGmf5WmNsCo9xu8dfaYamG5qaLP7ClhLN6NgsFe6SwJ2UbLEBK5dv9x8Mn5+RVhMWQ==}
+    engines: {node: '>=18'}
+
+  p-timeout@6.1.4:
+    resolution: {integrity: sha512-MyIV3ZA/PmyBN/ud8vV9XzwTrNtR4jFrObymZYnZqMmW0zA8Z17vnT0rBgFE/TlohB+YCHqXMgZzb3Csp49vqg==}
+    engines: {node: '>=14.16'}
 
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
@@ -3143,8 +3271,8 @@ packages:
   vue-component-type-helpers@2.2.12:
     resolution: {integrity: sha512-YbGqHZ5/eW4SnkPNR44mKVc6ZKQoRs/Rux1sxC6rdwXb4qpbOSYfDr9DsTHolOTGmIKgM9j141mZbBeg05R1pw==}
 
-  vue-component-type-helpers@3.1.5:
-    resolution: {integrity: sha512-7V3yJuNWW7/1jxCcI1CswnpDsvs02Qcx/N43LkV+ZqhLj2PKj50slUflHAroNkN4UWiYfzMUUUXiNuv9khmSpQ==}
+  vue-component-type-helpers@3.1.8:
+    resolution: {integrity: sha512-oaowlmEM6BaYY+8o+9D9cuzxpWQWHqHTMKakMxXu0E+UCIOMTljyIPO15jcnaCwJtZu/zWDotK7mOIHvWD9mcw==}
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
@@ -3326,11 +3454,35 @@ packages:
     resolution: {integrity: sha512-AyeEbWOu/TAXdxlV9wmGcR0+yh2j3vYPGOECcIj2S7MkrLyC7ne+oye2BKTItt0ii2PHk4cDy+95+LshzbXnGg==}
     engines: {node: '>=12.20'}
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@adobe/css-tools@4.4.4': {}
 
   '@alloc/quick-lru@5.2.0': {}
+
+  '@amit-org-il/chat-core@1.0.4(dompurify@3.3.0)':
+    dependencies:
+      socket.io-client: 4.8.1
+    optionalDependencies:
+      dompurify: 3.3.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@amit-org-il/chat-vue@1.0.4(dompurify@3.3.0)(vue@3.5.22(typescript@5.9.3))':
+    dependencies:
+      '@amit-org-il/chat-core': 1.0.4(dompurify@3.3.0)
+      marked: 15.0.12
+      vue: 3.5.22(typescript@5.9.3)
+    transitivePeerDependencies:
+      - bufferutil
+      - dompurify
+      - supports-color
+      - utf-8-validate
 
   '@ampproject/remapping@2.3.0':
     dependencies:
@@ -3943,7 +4095,7 @@ snapshots:
       ts-dedent: 2.2.0
       type-fest: 2.19.0
       vue: 3.5.22(typescript@5.9.3)
-      vue-component-type-helpers: 3.1.5
+      vue-component-type-helpers: 3.1.8
 
   '@testing-library/dom@10.4.0':
     dependencies:
@@ -3991,6 +4143,9 @@ snapshots:
   '@types/react@19.2.2':
     dependencies:
       csstype: 3.1.3
+
+  '@types/trusted-types@2.0.7':
+    optional: true
 
   '@types/uuid@9.0.8': {}
 
@@ -4676,6 +4831,11 @@ snapshots:
 
   dom-accessibility-api@0.6.3: {}
 
+  dompurify@3.3.0:
+    optionalDependencies:
+      '@types/trusted-types': 2.0.7
+    optional: true
+
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -4870,6 +5030,8 @@ snapshots:
   esutils@2.0.3: {}
 
   eventemitter2@6.4.9: {}
+
+  eventemitter3@5.0.1: {}
 
   execa@8.0.1:
     dependencies:
@@ -5384,6 +5546,8 @@ snapshots:
       punycode.js: 2.3.1
       uc.micro: 2.1.0
 
+  marked@15.0.12: {}
+
   marked@17.0.0: {}
 
   math-intrinsics@1.1.0: {}
@@ -5498,6 +5662,13 @@ snapshots:
   p-locate@5.0.0:
     dependencies:
       p-limit: 3.1.0
+
+  p-queue@8.1.1:
+    dependencies:
+      eventemitter3: 5.0.1
+      p-timeout: 6.1.4
+
+  p-timeout@6.1.4: {}
 
   package-json-from-dist@1.0.1: {}
 
@@ -6265,7 +6436,7 @@ snapshots:
 
   vue-component-type-helpers@2.2.12: {}
 
-  vue-component-type-helpers@3.1.5: {}
+  vue-component-type-helpers@3.1.8: {}
 
   vue-demi@0.14.10(vue@3.5.22(typescript@5.9.3)):
     dependencies:
@@ -6412,3 +6583,5 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yocto-queue@1.2.1: {}
+
+  zod@3.25.76: {}

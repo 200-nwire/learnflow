@@ -5,7 +5,9 @@ import { router } from './router';
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
 import Tooltip from 'primevue/tooltip';
-import { initTelemetry } from '@amit/telemetry/vue';
+// Telemetry is now handled by @amit/player-signals internally
+import { AmitChatPlugin } from '@amit-org-il/chat-vue';
+// Chatbot styles are imported in ChatbotSimulatorV2.vue for scoping
 import 'primevue/resources/themes/lara-light-blue/theme.css';
 import 'primeicons/primeicons.css';
 import './style.css';
@@ -19,18 +21,19 @@ app.use(ToastService);
 app.use(router);
 app.directive('tooltip', Tooltip);
 
-// Initialize telemetry
-initTelemetry({
-  workerPath: new URL('./workers/telemetry-worker.js', import.meta.url),
-  queueConfig: {
-    batchSize: 50,
-    flushInterval: 5000,
-    maxQueueSize: 1000,
-  },
-}).then(() => {
-  console.log('Telemetry initialized');
-}).catch(err => {
-  console.error('Failed to initialize telemetry:', err);
+// Initialize Amit Chat Plugin
+const getAuthToken = () => {
+  // Get JWT from localStorage (can be set by ChatbotSimulatorV2 component)
+  const token = localStorage.getItem('chatbot_jwt_token') || '';
+  return { jwt: token };
+};
+
+app.use(AmitChatPlugin, {
+  baseUrl: import.meta.env.VITE_API_URL || 'https://botgen-dev-105584895737.me-west1.run.app',
+  clientType: 'lms',
+  getAuth: getAuthToken,
 });
+
+// Telemetry/xAPI is now handled by @amit/player-signals worker internally
 
 app.mount('#app');

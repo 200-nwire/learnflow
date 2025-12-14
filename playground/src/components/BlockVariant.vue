@@ -30,7 +30,7 @@
           />
         </div>
         <div class="text-sm text-gray-500">
-          Score: {{ selectionResult?.why.score[selectedVariant?.id || '']?.toFixed(3) || 'N/A' }}
+          Score: {{ selectionResult?.score?.toFixed(3) || 'N/A' }}
         </div>
       </div>
 
@@ -64,17 +64,17 @@
           </template>
           
           <div class="space-y-3">
-            <div v-if="selectionResult?.why.overridesUsed" class="explanation-item">
+            <div v-if="selectionResult?.trace?.reason === 'override'" class="explanation-item">
               <Tag value="Override Applied" severity="warning" icon="pi pi-shield" />
               <p class="text-sm text-gray-600 mt-2">
                 Teacher or system override forced this variant selection.
               </p>
             </div>
 
-            <div v-else-if="selectionResult?.why.stickyUsed" class="explanation-item">
+            <div v-else-if="selectionResult?.trace?.reason === 'sticky'" class="explanation-item">
               <Tag value="Sticky Choice" severity="success" icon="pi pi-lock" />
               <p class="text-sm text-gray-600 mt-2">
-                Previous choice retained for consistency across the {{ stickyScope }}.
+                Previous choice retained for consistency.
               </p>
             </div>
 
@@ -86,11 +86,11 @@
             </div>
 
             <!-- Guard Results -->
-            <div v-if="Object.keys(selectionResult?.why.guards || {}).length > 0">
+            <div v-if="selectionResult?.trace?.guards && Object.keys(selectionResult.trace.guards).length > 0">
               <h5 class="text-sm font-semibold mb-2">Guard Evaluation</h5>
               <div class="space-y-1">
                 <div 
-                  v-for="(passed, variantId) in selectionResult?.why.guards" 
+                  v-for="(passed, variantId) in selectionResult.trace.guards" 
                   :key="variantId"
                   class="flex items-center justify-between text-xs"
                 >
@@ -105,7 +105,7 @@
             </div>
 
             <!-- Scores -->
-            <div v-if="Object.keys(selectionResult?.why.score || {}).length > 0">
+            <div v-if="selectionResult?.trace?.scores && Object.keys(selectionResult.trace.scores).length > 0">
               <h5 class="text-sm font-semibold mb-2">Variant Scores</h5>
               <div class="space-y-1">
                 <div 
@@ -174,11 +174,12 @@ import Tag from 'primevue/tag';
 import Button from 'primevue/button';
 import Accordion from 'primevue/accordion';
 import AccordionTab from 'primevue/accordiontab';
-import type { Slot, Variant, SelectionResult, SessionSnapshot } from '@amit/adaptivity';
+import type { Slot, Variant } from '@amit/player-variants';
+import type { SessionSnapshot } from '@amit/player-session';
 
 interface Props {
   slot: Slot;
-  selectionResult: SelectionResult | null;
+  selectionResult: { slotId: string; variantId: string; score?: number; trace?: any } | null;
   session: SessionSnapshot;
 }
 
@@ -195,7 +196,7 @@ const selectedVariant = computed(() => {
 });
 
 const isSticky = computed(() => {
-  return props.selectionResult?.why.stickyUsed || false;
+  return props.selectionResult?.trace?.reason === 'sticky' || false;
 });
 
 const stickyScope = computed(() => {
@@ -204,9 +205,9 @@ const stickyScope = computed(() => {
 });
 
 const sortedScores = computed(() => {
-  if (!props.selectionResult?.why.score) return {};
-  const entries = Object.entries(props.selectionResult.why.score);
-  entries.sort((a, b) => b[1] - a[1]);
+  if (!props.selectionResult?.trace?.scores) return {};
+  const entries = Object.entries(props.selectionResult.trace.scores);
+  entries.sort((a, b) => (b[1] as number) - (a[1] as number));
   return Object.fromEntries(entries);
 });
 

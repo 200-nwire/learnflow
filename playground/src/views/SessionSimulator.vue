@@ -31,7 +31,7 @@
                 :key="slot.id"
                 :slot="slot"
                 :selection-result="selections[slot.id]"
-                :session="session"
+                :session="sessionSnapshot"
                 @reselect="() => selectVariantForSlot(slot)"
               />
             </div>
@@ -51,15 +51,15 @@
             <template #content>
               <div class="grid grid-cols-2 gap-4">
                 <div class="stat">
-                  <div class="text-2xl font-bold text-blue-600">{{ (session.metrics.accEWMA * 100).toFixed(0) }}%</div>
+                  <div class="text-2xl font-bold text-blue-600">{{ (sessionSnapshot.metrics.accEWMA * 100).toFixed(0) }}%</div>
                   <div class="text-xs text-gray-600">Accuracy</div>
                 </div>
                 <div class="stat">
-                  <div class="text-2xl font-bold text-green-600">{{ session.metrics.streak }}</div>
+                  <div class="text-2xl font-bold text-green-600">{{ sessionSnapshot.metrics.streak }}</div>
                   <div class="text-xs text-gray-600">Streak</div>
                 </div>
                 <div class="stat">
-                  <div class="text-2xl font-bold text-purple-600">{{ session.metrics.attempts }}</div>
+                  <div class="text-2xl font-bold text-purple-600">{{ sessionSnapshot.metrics.attempts }}</div>
                   <div class="text-xs text-gray-600">Attempts</div>
                 </div>
                 <div class="stat">
@@ -69,14 +69,6 @@
               </div>
             </template>
           </Card>
-
-          <!-- Telemetry Monitor -->
-          <TelemetryMonitor 
-            :stats="telemetryStats"
-          />
-
-          <!-- LRS Configuration -->
-          <LRSConfig />
 
           <!-- Event Dispatcher -->
           <EventDispatcher @event="handleEvent" />
@@ -100,17 +92,18 @@
                   class="w-full"
                 />
                 <Button 
-                  label="Clear Sticky Choices" 
-                  icon="pi pi-unlock"
+                  label="Clear Sticky" 
+                  icon="pi pi-eraser"
                   @click="clearSticky"
-                  severity="warn"
+                  severity="warning"
                   outlined
                   class="w-full"
                 />
                 <Button 
-                  label="Export Session Data" 
+                  label="Export Session" 
                   icon="pi pi-download"
                   @click="exportSessionData"
+                  severity="info"
                   outlined
                   class="w-full"
                 />
@@ -121,33 +114,24 @@
       </div>
     </div>
 
-    <!-- Settings Drawer -->
-    <SettingsDrawer 
-      v-model:visible="settingsVisible"
-      :session="session"
-      @update:session="updateSession"
-    />
-
     <!-- Help Dialog -->
-    <Dialog
-      v-model:visible="showHelpDialog"
-      header="Adaptive Content Simulator"
-      :modal="true"
-      :dismissableMask="true"
+    <Dialog 
+      v-model:visible="showHelpDialog" 
+      modal 
+      header="How the Adaptive Engine Works"
       :style="{ width: '600px' }"
       class="help-dialog"
     >
-      <div class="space-y-4 text-sm">
+      <div class="space-y-4">
         <div>
           <h4 class="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-            <i class="pi pi-eye text-blue-600"></i>
-            What You're Seeing
+            <i class="pi pi-info-circle text-blue-600"></i>
+            Overview
           </h4>
           <p class="text-gray-700 leading-relaxed">
-            This simulator demonstrates a <strong>personalized learning engine</strong> that adapts content 
-            in real-time based on student performance and context. Each "block" on a page can have multiple 
-            <strong>variants</strong> (easy, standard, hard), and the engine automatically selects the best 
-            variant for each learner.
+            This simulator demonstrates real-time adaptive content selection. The engine evaluates 
+            multiple content variants for each slot based on learner context, performance metrics, 
+            and preferences.
           </p>
         </div>
 
@@ -156,25 +140,14 @@
         <div>
           <h4 class="font-semibold text-blue-900 mb-2 flex items-center gap-2">
             <i class="pi pi-cog text-blue-600"></i>
-            How to Use
+            Selection Process
           </h4>
-          <ul class="space-y-2 text-gray-700">
-            <li class="flex items-start gap-2">
-              <i class="pi pi-angle-right text-blue-500 mt-0.5"></i>
-              <span><strong>Navigate pages</strong> using the Previous/Next buttons or page selector</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <i class="pi pi-angle-right text-blue-500 mt-0.5"></i>
-              <span><strong>Trigger events</strong> (answer submissions, time spent) to update session metrics</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <i class="pi pi-angle-right text-blue-500 mt-0.5"></i>
-              <span><strong>Watch variants change</strong> as accuracy and engagement shift</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <i class="pi pi-angle-right text-blue-500 mt-0.5"></i>
-              <span><strong>Test sticky behavior</strong> by revisiting pages to see consistent choices</span>
-            </li>
+          <ul class="list-disc list-inside space-y-1 text-gray-700">
+            <li><strong>Overrides:</strong> Teacher/system forced choices (highest priority)</li>
+            <li><strong>Sticky:</strong> Previously selected variants retained for consistency</li>
+            <li><strong>Guards:</strong> CEL expressions filter eligible variants</li>
+            <li><strong>Scoring:</strong> Weighted scoring based on difficulty, theme, modality</li>
+            <li><strong>Selection:</strong> Highest-scoring variant that passes guards</li>
           </ul>
         </div>
 
@@ -198,353 +171,240 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, inject } from 'vue';
+import { ref, computed, onMounted, inject, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Dialog from 'primevue/dialog';
 import Divider from 'primevue/divider';
-import { 
-  createSnapshot, 
-  selectVariant, 
-  updateAccuracyEWMA,
-  setPreferenceTheme,
-  type SessionSnapshot,
-  type Slot,
-  type Policy,
-  type SelectionResult,
-} from '@amit/adaptivity';
-import { recordSignal, onSignal, useTelemetryStats, updateTelemetrySession } from '@amit/telemetry/vue';
-import { useSessionWorker } from '../composables/useSessionWorker';
+import { useSignals, type SignalMeta } from '@amit/player-signals';
+import { useSession, type SessionSnapshot } from '@amit/player-session';
+import { useVariants, scoreVariant, type Slot, type PlayContent } from '@amit/player-variants';
 import SettingsDrawer from '../components/SettingsDrawer.vue';
 import EventDispatcher from '../components/EventDispatcher.vue';
 import BlockVariant from '../components/BlockVariant.vue';
 import PageNavigation from '../components/PageNavigation.vue';
-import TelemetryMonitor from '../components/TelemetryMonitor.vue';
-import LRSConfig from '../components/LRSConfig.vue';
 import type { Page } from '../components/PageNavigation.vue';
+import { parseLessonToSlots, parseLessonPages, parseLessonInfo, type LessonData } from '../utils/lessonParser';
+import { createBlockDataMap, type BlockDataMap } from '../utils/blockDataMap';
+import lessonDataJson from '../../data/play.json';
 
 const toast = useToast();
 const settingsVisible = inject('settingsVisible', ref(false));
 
-// Session worker (simplified - only session management)
-const { updateSession: updateWorkerSession, getSession: getWorkerSession } = useSessionWorker();
+// Load lesson data
+const lesson = (lessonDataJson as any).data as LessonData;
+const lessonInfo = parseLessonInfo(lesson);
+const pages = parseLessonPages(lesson);
+const allSlots = parseLessonToSlots(lesson);
+const blockDataMap = createBlockDataMap(lesson.blocks);
 
-// Session state
-const session = ref<SessionSnapshot>(createSnapshot({
-  ids: { 
-    userId: 'student_001', 
-    courseId: 'math_101', 
-    lessonId: 'fractions', 
-    pageId: 'page_1',
-    attemptId: `attempt_${Date.now()}`,
-  },
-  user: { 
-    lang: 'en',
-    preferences: { 
-      theme: { value: 'soccer', source: 'student' } 
-    },
-  },
-  metrics: {
-    accEWMA: 0.75,
-    latencyEWMA: 2000,
-    idleSec: 0,
-    streak: 2,
-    fatigue: 0.1,
-    attempts: 5,
-  },
-}));
-
-const selections = ref<Record<string, SelectionResult>>({});
-const telemetryStats = useTelemetryStats();
-const showHelpDialog = ref(false);
-
-// Policy
-const policy: Policy = { version: 'v1.0.0' };
-
-// Pages definition
-const pages: Page[] = [
-  { id: 'page_1', title: 'Introduction to Fractions', description: 'Learn the basics' },
-  { id: 'page_2', title: 'Practice Problems', description: 'Apply what you learned' },
-  { id: 'page_3', title: 'Advanced Concepts', description: 'Challenge yourself' },
-  { id: 'page_4', title: 'Review & Assessment', description: 'Test your knowledge' },
-];
-
-// Slots definition with rich variants
-const allSlots: Record<string, Slot[]> = {
-  page_1: [
-    {
-      id: 'intro_video',
-      variants: [
-        {
-          id: 'easy_video_soccer',
-          meta: { 
-            difficulty: 'easy', 
-            modality: 'video', 
-            theme: 'soccer',
-            language: 'en',
-            durationSec: 120,
-            deviceFit: ['desktop', 'mobile', 'tablet'],
-            cognitiveLoad: 'low',
-          },
-          guard: 'ctx.metrics.accEWMA < 0.7',
-          scoreWeights: { preferLowAcc: 0.6, preferThemeMatch: 0.3 },
-          sticky: { scope: 'lesson', strength: 'strong' },
-        },
-        {
-          id: 'std_reading_music',
-          meta: { 
-            difficulty: 'std', 
-            modality: 'reading', 
-            theme: 'music',
-            language: 'en',
-            durationSec: 180,
-            deviceFit: ['desktop', 'tablet'],
-            cognitiveLoad: 'med',
-          },
-          guard: 'ctx.metrics.accEWMA >= 0.5 && ctx.metrics.accEWMA < 0.9',
-          scoreWeights: { preferThemeMatch: 0.4, preferModality: { reading: 0.3 } },
-        },
-        {
-          id: 'hard_interactive_space',
-          meta: { 
-            difficulty: 'hard', 
-            modality: 'interactive', 
-            theme: 'space',
-            language: 'en',
-            durationSec: 240,
-            deviceFit: ['desktop'],
-            cognitiveLoad: 'high',
-          },
-          guard: 'ctx.metrics.accEWMA >= 0.85 && ctx.metrics.streak >= 3',
-          scoreWeights: { preferModality: { interactive: 0.5 } },
-        },
-      ],
-      fallbackVariantId: 'std_reading_music',
-    },
-  ],
-  page_2: [
-    {
-      id: 'practice_quiz',
-      variants: [
-        {
-          id: 'easy_quiz_hints',
-          meta: { 
-            difficulty: 'easy', 
-            modality: 'quiz',
-            theme: 'soccer',
-            deviceFit: ['desktop', 'mobile', 'tablet'],
-          },
-          guard: 'ctx.metrics.attempts > 2 && ctx.metrics.streak === 0',
-          scoreWeights: { preferLowAcc: 0.8 },
-        },
-        {
-          id: 'std_quiz',
-          meta: { 
-            difficulty: 'std', 
-            modality: 'quiz',
-            deviceFit: ['desktop', 'mobile', 'tablet'],
-          },
-          guard: 'true',
-          scoreWeights: {},
-        },
-        {
-          id: 'hard_quiz_challenge',
-          meta: { 
-            difficulty: 'hard', 
-            modality: 'quiz',
-            deviceFit: ['desktop', 'tablet'],
-          },
-          guard: 'ctx.metrics.accEWMA > 0.9 && ctx.metrics.streak >= 5',
-          scoreWeights: {},
-        },
-      ],
-      fallbackVariantId: 'std_quiz',
-    },
-  ],
-  page_3: [
-    {
-      id: 'advanced_lesson',
-      variants: [
-        {
-          id: 'video_tutorial',
-          meta: { difficulty: 'std', modality: 'video', deviceFit: ['desktop', 'mobile', 'tablet'] },
-          guard: 'ctx.user.preferences?.modalityBias?.value === "video" || ctx.metrics.accEWMA < 0.8',
-        },
-        {
-          id: 'simulation',
-          meta: { difficulty: 'hard', modality: 'simulation', deviceFit: ['desktop'] },
-          guard: 'ctx.env.device === "desktop" && ctx.metrics.accEWMA >= 0.8',
-        },
-      ],
-      fallbackVariantId: 'video_tutorial',
-    },
-  ],
-  page_4: [
-    {
-      id: 'final_assessment',
-      variants: [
-        {
-          id: 'standard_test',
-          meta: { difficulty: 'std', modality: 'quiz', deviceFit: ['desktop', 'mobile', 'tablet'] },
-          guard: 'true',
-        },
-      ],
-      fallbackVariantId: 'standard_test',
-    },
-  ],
+// Convert lesson to PlayContent format
+const playContent: PlayContent = {
+  pages: pages.map(page => ({
+    id: page.id,
+    slots: allSlots[page.id] || [],
+  })),
 };
 
-const currentPageSlots = computed(() => {
-  return allSlots[session.value.ids.pageId] || [];
+// Initialize signals
+const signals = useSignals({
+  config: {
+    outbox: { enabled: true },
+    xapi: {
+      enabled: false, // Disable for demo
+    },
+  },
 });
 
+// Initialize session
+const session = useSession({
+  snapshot: {
+    ids: {
+      userId: 'student_001',
+      courseId: lessonInfo.courseId,
+      lessonId: lessonInfo.id,
+      pageId: pages[0]?.id || '',
+      attemptId: `attempt_${Date.now()}`,
+    },
+    user: {
+      lang: 'en',
+      preferences: {
+        theme: { value: 'cars', source: 'student' },
+      },
+    },
+    env: {
+      device: 'desktop',
+      online: navigator.onLine,
+    },
+    metrics: {
+      accEWMA: 0.75,
+      latencyEWMA: 2000,
+      idleSec: 0,
+      streak: 2,
+      fatigue: 0.1,
+      attempts: 5,
+    },
+    perSkill: {},
+    sticky: {},
+    seenVariants: {},
+    policy: {
+      version: 'v1.0.0',
+    },
+  },
+  policyVersion: 'v1.0.0',
+});
+
+// Bind session as subscriber to signals
+signals.onAny((signal) => {
+  session.apply(signal);
+});
+
+// Initialize variants selector
+const variants = useVariants({
+  getLesson: () => playContent,
+  getSession: () => sessionSnapshot.value,
+  scoreVariant: scoreVariant,
+});
+
+const selections = ref<Record<string, { slotId: string; variantId: string; score?: number; trace?: any }>>({});
+const showHelpDialog = ref(false);
+
+// Computed for easy template access
+const sessionSnapshot = computed(() => session.session.value);
+
+const currentPageSlots = computed(() => {
+  return allSlots[sessionSnapshot.value.ids.pageId] || [];
+});
+
+// Meta builder
+function meta(): SignalMeta {
+  const snap = sessionSnapshot.value;
+  return {
+    userId: snap.ids.userId,
+    courseId: snap.ids.courseId,
+    lessonId: snap.ids.lessonId,
+    attemptId: snap.ids.attemptId,
+    pageId: snap.ids.pageId,
+    lang: snap.user.lang,
+    device: snap.env.device,
+    online: snap.env.online,
+  };
+}
+
+// Initialize selections for current page
 const initializeSelections = () => {
-  currentPageSlots.value.forEach(slot => {
-    if (!selections.value[slot.id]) {
-      selectVariantForSlot(slot);
-    }
+  const pageId = sessionSnapshot.value.ids.pageId;
+  
+  // Record experienced signal
+  signals.experienced({ pageId }, meta());
+
+  // Select variants for this page
+  const { selections: pageSelections } = variants.selectForPage(pageId, { trace: true });
+  
+  // Store selections
+  pageSelections.forEach((sel) => {
+    selections.value[sel.slotId] = sel;
+    
+    // Record selected signal
+    signals.selected(
+      {
+        pageId,
+        slotId: sel.slotId,
+        variantId: sel.variantId,
+        score: sel.score,
+        trace: sel.trace,
+      },
+      meta()
+    );
   });
 };
 
 const selectVariantForSlot = (slot: Slot) => {
-  const result = selectVariant(slot, session.value, policy, { trace: true });
-  selections.value[slot.id] = result;
+  const pageId = sessionSnapshot.value.ids.pageId;
+  const { selections: pageSelections } = variants.selectForPage(pageId, { trace: true });
+  const selection = pageSelections.find(s => s.slotId === slot.id);
   
-  const alternatives = slot.variants.map(v => ({
-    variantId: v.id,
-    score: result.why.score[v.id] || 0,
-    guardPassed: result.why.guards[v.id] ?? true,
-  }));
-  
-  // Record signal using telemetry package
-  recordSignal("variant_selected", {
-    slotId: result.slotId,
-    variantId: result.variantId,
-    reason: result.why.overridesUsed ? "override" : result.why.stickyUsed ? "sticky" : "adaptive",
-    selectionResult: result,
-    alternatives,
-  }, {
-    source: "adaptivity",
-    priority: "normal",
-    metadata: {
-      userId: session.value.ids.userId,
-      courseId: session.value.ids.courseId,
-      lessonId: session.value.ids.lessonId,
-      pageId: session.value.ids.pageId,
-    },
-    tags: ["variant_selection", "adaptivity"],
-  });
-  
-  toast.add({
-    severity: 'info',
-    summary: 'Variant Selected',
-    detail: `${result.variantId} chosen for ${slot.id}`,
-    life: 3000,
-  });
-};
-
-const handleEvent = ({ type, payload }: { type: string; payload: any }) => {
-  if (type === 'answer_submitted') {
-    updateAccuracyEWMA(session.value, payload.correct);
+  if (selection) {
+    selections.value[slot.id] = selection;
     
-    // Record signal using telemetry
-    recordSignal("answer_submitted", {
-      slotId: 'practice_quiz',
-      variantId: selections.value['practice_quiz']?.variantId || 'unknown',
-      questionId: payload.questionId || 'q1',
-      correct: payload.correct,
-      timeTakenMs: payload.timeTakenMs,
-      attempts: payload.attempts,
-      answer: payload.answer,
-    }, {
-      source: "adaptivity",
-      priority: "high",
-      metadata: {
-        userId: session.value.ids.userId,
-        courseId: session.value.ids.courseId,
-        lessonId: session.value.ids.lessonId,
-        pageId: session.value.ids.pageId,
+    signals.selected(
+      {
+        pageId,
+        slotId: selection.slotId,
+        variantId: selection.variantId,
+        score: selection.score,
+        trace: selection.trace,
       },
-      tags: ["assessment", "answer"],
-    });
+      meta()
+    );
     
-    updateWorkerSession(session.value);
-  updateTelemetrySession(session.value);
-    initializeSelections();
-  } else if (type === 'preference_changed') {
-    if (payload.preference === 'theme') {
-      setPreferenceTheme(session.value, payload.value);
-      
-      recordSignal("preference_changed", {
-        preference: payload.preference,
-        value: payload.value,
-      }, {
-        source: "user_interaction",
-        priority: "normal",
-        metadata: {
-          userId: session.value.ids.userId,
-        },
-        tags: ["preference", "user_setting"],
-      });
-      
-      updateWorkerSession(session.value);
-  updateTelemetrySession(session.value);
-      clearSticky();
-      initializeSelections();
-    }
-  } else if (type === 'user_interaction') {
-    if (payload.action === 'increment_fatigue') {
-      session.value.metrics.fatigue = Math.min(1, session.value.metrics.fatigue + payload.amount);
-      updateWorkerSession(session.value);
-  updateTelemetrySession(session.value);
-    }
-    
-    recordSignal("user_interaction", payload, {
-      source: "user_interaction",
-      priority: "normal",
-      metadata: {
-        userId: session.value.ids.userId,
-      },
-    });
-  } else {
-    // Generic signal
-    recordSignal(type, payload, {
-      source: "adaptivity",
-      priority: "normal",
-      metadata: {
-        userId: session.value.ids.userId,
-        courseId: session.value.ids.courseId,
-        lessonId: session.value.ids.lessonId,
-        pageId: session.value.ids.pageId,
-      },
+    toast.add({
+      severity: 'info',
+      summary: 'Variant Selected',
+      detail: `${selection.variantId} chosen for ${slot.id}`,
+      life: 3000,
     });
   }
 };
 
+const handleEvent = ({ type, payload }: { type: string; payload: any }) => {
+  if (type === 'answer_submitted') {
+    // Record answered signal
+    signals.answered(
+      {
+        pageId: sessionSnapshot.value.ids.pageId,
+        blockId: payload.blockId || 'unknown',
+        questionId: payload.questionId || 'q1',
+        correct: payload.correct,
+        latencyMs: payload.timeTakenMs,
+        attempts: payload.attempts,
+        score: payload.score,
+      },
+      meta()
+    );
+    
+    initializeSelections();
+  } else if (type === 'preference_changed') {
+    if (payload.preference === 'theme') {
+      // Create a record to update preference
+      // The session will be updated when the signal is applied
+      // For now, we'll manually update since we don't have a preference_changed signal type
+      const current = sessionSnapshot.value;
+      session.initFrom({
+        snapshot: {
+          ...current,
+          user: {
+            ...current.user,
+            preferences: {
+              ...current.user.preferences,
+              theme: {
+                value: payload.value,
+                source: 'student',
+              },
+            },
+          },
+          sticky: {}, // Clear sticky when theme changes
+        },
+      });
+      
+      selections.value = {};
+      initializeSelections();
+    }
+  }
+};
+
 const handlePageChange = ({ from, to, direction, timeOnPageMs }: any) => {
-  session.value.ids.pageId = to.id;
-  
-  // Record signal using telemetry
-  recordSignal("page_navigated", {
-    fromPageId: from.id,
-    toPageId: to.id,
-    direction,
-    timeOnPageMs,
-  }, {
-    source: "adaptivity",
-    priority: "normal",
-    metadata: {
-      userId: session.value.ids.userId,
-      courseId: session.value.ids.courseId,
-      lessonId: session.value.ids.lessonId,
+  // Record experienced signal - this will update the session via apply()
+  signals.experienced(
+    {
       pageId: to.id,
+      fromPageId: from.id,
     },
-    tags: ["navigation", "page_change"],
-  });
+    meta()
+  );
   
-  updateWorkerSession(session.value);
-  updateTelemetrySession(session.value);
+  // Re-select variants for new page
   initializeSelections();
   
   toast.add({
@@ -556,8 +416,7 @@ const handlePageChange = ({ from, to, direction, timeOnPageMs }: any) => {
 };
 
 const updateSession = (newSession: SessionSnapshot) => {
-  session.value = newSession;
-  updateWorkerSession(newSession);
+  session.initFrom({ snapshot: newSession });
   selections.value = {};
   initializeSelections();
   
@@ -570,22 +429,44 @@ const updateSession = (newSession: SessionSnapshot) => {
 };
 
 const resetSession = () => {
-  session.value = createSnapshot({
-    ids: { 
-      userId: 'student_001', 
-      courseId: 'math_101', 
-      lessonId: 'fractions', 
-      pageId: 'page_1',
-      attemptId: `attempt_${Date.now()}`,
+  session.initFrom({
+    snapshot: {
+      ids: {
+        userId: 'student_001',
+        courseId: lessonInfo.courseId,
+        lessonId: lessonInfo.id,
+        pageId: pages[0]?.id || '',
+        attemptId: `attempt_${Date.now()}`,
+      },
+      user: {
+        lang: 'en',
+        preferences: {
+          theme: { value: 'cars', source: 'student' },
+        },
+      },
+      env: {
+        device: 'desktop',
+        online: navigator.onLine,
+      },
+      metrics: {
+        accEWMA: 0.75,
+        latencyEWMA: 2000,
+        idleSec: 0,
+        streak: 0,
+        fatigue: 0,
+        attempts: 0,
+      },
+      perSkill: {},
+      sticky: {},
+      seenVariants: {},
+      policy: {
+        version: 'v1.0.0',
+      },
     },
-    user: { lang: 'en' },
-    metrics: { accEWMA: 0.75, latencyEWMA: 2000, idleSec: 0, streak: 0, fatigue: 0, attempts: 0 },
   });
   
   selections.value = {};
   initializeSelections();
-  updateWorkerSession(session.value);
-  updateTelemetrySession(session.value);
   
   toast.add({
     severity: 'info',
@@ -596,7 +477,13 @@ const resetSession = () => {
 };
 
 const clearSticky = () => {
-  session.value.sticky = {};
+  const current = sessionSnapshot.value;
+  session.initFrom({
+    snapshot: {
+      ...current,
+      sticky: {},
+    },
+  });
   selections.value = {};
   initializeSelections();
   
@@ -610,7 +497,7 @@ const clearSticky = () => {
 
 const exportSessionData = () => {
   const data = {
-    session: session.value,
+    session: sessionSnapshot.value,
     selections: selections.value,
     timestamp: new Date().toISOString(),
   };
@@ -630,33 +517,32 @@ const exportSessionData = () => {
   });
 };
 
-// Telemetry stats are reactive via useTelemetryStats()
-
-onMounted(async () => {
-  await updateWorkerSession(session.value);
-  // Update telemetry worker session for xAPI statement generation
-  await updateTelemetrySession(session.value);
-  initializeSelections();
+onMounted(() => {
+  // Record started signal
+  signals.started(
+    {
+      attemptId: sessionSnapshot.value.ids.attemptId || `attempt_${Date.now()}`,
+      mode: 'standalone',
+    },
+    meta()
+  );
   
-  // Subscribe to telemetry signals for debugging
-  onSignal((signal) => {
-    console.log('[Telemetry]', signal.type, signal.payload);
-  });
+  initializeSelections();
 });
 
-defineExpose({ session, settingsVisible });
+defineExpose({ session: sessionSnapshot, settingsVisible });
 </script>
 
 <style scoped>
 .session-simulator {
-  height: calc(100vh - 105px); /* Account for header */
-  overflow: hidden; /* No main scroll */
+  height: calc(100vh - 105px);
+  overflow: hidden;
 }
 
 .main-content {
   @apply container mx-auto px-6 py-6;
   height: 100%;
-  overflow: hidden; /* No main content scroll */
+  overflow: hidden;
 }
 
 .content-grid {
@@ -720,4 +606,3 @@ defineExpose({ session, settingsVisible });
   padding: 1.5rem;
 }
 </style>
-

@@ -126,7 +126,8 @@ import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
 import Textarea from 'primevue/textarea';
 import Divider from 'primevue/divider';
-import type { SignalType } from '@amit/adaptivity';
+// Event types for dispatcher (not using signals package types here)
+type SignalType = string;
 
 interface DispatchedEvent {
   id: string;

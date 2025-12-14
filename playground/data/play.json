@@ -1,0 +1,706 @@
+{
+    "data": {
+        "lesson": {
+            "id": "6922e6c51f1753acdd9ef029",
+            "course": "6922e6c51f1753acdd9ef025",
+            "title": "נושא",
+            "cover": "https://res.cloudinary.com/dcodkxpej/image/upload/v1712662821/LessonsBackground/image-20240409-101444_pnudss.png",
+            "final_message": "",
+            "unit": "6922e6b370637a384b9cab91",
+            "lesson": 1,
+            "display": {
+                "themeColor": "#DA1F72",
+                "themeType": "default",
+                "themeFont": "overpass",
+                "controls": false,
+                "progress": false,
+                "center": false,
+                "rtl": true,
+                "transition": "slide",
+                "transitionSpeed": "default",
+                "backgroundTransition": "fade"
+            },
+            "sections": [
+                {
+                    "title": "שם המקטע",
+                    "coins": 0,
+                    "position": 1,
+                    "_id": "6922e6c51f1753acdd9ef028",
+                    "id": "6922e6c51f1753acdd9ef028"
+                }
+            ],
+            "addons": [],
+            "panels": [],
+            "published": true,
+            "settings": {
+                "optional": false,
+                "feedback_enabled": true,
+                "gradable": true,
+                "attempts": 3,
+                "math_keyboard": false,
+                "needs_review": true,
+                "locked": false,
+                "blank": false,
+                "teams_enabled": false
+            },
+            "agenda": {
+                "list": []
+            },
+            "pulledCommits": [],
+            "deleted": false,
+            "created_on": 1763894981411,
+            "modified_on": 1764510050734
+        },
+        "pages": [
+            {
+                "title": "כותרת",
+                "course": "6922e6c51f1753acdd9ef025",
+                "lesson": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "display": {
+                    "backgroundColor": "#FFFFFF",
+                    "backgroundImage": "",
+                    "backgroundGradient": "",
+                    "backgroundSize": "cover",
+                    "backgroundRepeat": "no-repeat",
+                    "backgroundOpacity": 1,
+                    "backgroundVideo": "",
+                    "transition": "slide",
+                    "transitionSpeed": "default",
+                    "backgroundTransition": "fade"
+                },
+                "elements": [],
+                "position": 1,
+                "track": "default",
+                "shouldSkip": false,
+                "hideProgress": false,
+                "id": "6925c90a40498cf8752f73aa",
+                "fragments": [],
+                "created_on": 1764084030188,
+                "modified_on": 1764509859349
+            },
+            {
+                "title": "כותרת",
+                "course": "6922e6c51f1753acdd9ef025",
+                "lesson": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "display": {
+                    "backgroundColor": "#FFFFFF",
+                    "backgroundImage": "",
+                    "backgroundGradient": "",
+                    "backgroundSize": "cover",
+                    "backgroundRepeat": "no-repeat",
+                    "backgroundOpacity": 1,
+                    "backgroundVideo": "",
+                    "transition": "slide",
+                    "transitionSpeed": "default",
+                    "backgroundTransition": "fade"
+                },
+                "elements": [],
+                "position": 2,
+                "track": "default",
+                "shouldSkip": false,
+                "hideProgress": false,
+                "id": "69284b4e038e8b39168d5339",
+                "fragments": [],
+                "created_on": 1764509859357,
+                "modified_on": 1764509859357
+            }
+        ],
+        "blocks": [
+            {
+                "name": "rich_text",
+                "content": {
+                    "data": {
+                        "type": "doc",
+                        "content": [
+                            {
+                                "type": "paragraph",
+                                "attrs": {
+                                    "indent": null,
+                                    "color": null,
+                                    "dir": null,
+                                    "textAlign": "inherit",
+                                    "class": "mb-4 body",
+                                    "fontSize": "18px",
+                                    "id": null
+                                },
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "Cars or Football theme",
+                                        "id": null
+                                    }
+                                ],
+                                "id": null
+                            }
+                        ],
+                        "id": null
+                    },
+                    "placeholder": "כיתבו את הפסקה שלכם כאן",
+                    "id": null
+                },
+                "position": 1,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "6925c90a40498cf8752f73aa",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "levels": []
+                },
+                "id": "692c2d55d1c4614deb3ab9c9",
+                "type": "content",
+                "created_on": 1764509859721,
+                "modified_on": 1764509859721
+            },
+            {
+                "name": "disclaimer",
+                "content": {
+                    "type": "info",
+                    "text": "<p fontsize=\"18px\" textalign=\"inherit\" class=\"my-0.5! py-0!\" style=\"text-align: inherit !important; justify-content: inherit !important; font-size: 18px\" font-size=\"18px\">question by level</p>",
+                    "id": null
+                },
+                "position": 1,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "69284b4e038e8b39168d5339",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "levels": []
+                },
+                "id": "692c44a708c1543e89d4af4d",
+                "type": "content",
+                "created_on": 1764509859722,
+                "modified_on": 1764509859722
+            },
+            {
+                "name": "slot",
+                "position": 2,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "69284b4e038e8b39168d5339",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "levels": []
+                },
+                "id": "692c453c08c1543e89d4afcf",
+                "type": "content",
+                "created_on": 1764509859723,
+                "modified_on": 1764509859723
+            },
+            {
+                "slotId": "692c453c08c1543e89d4afcf",
+                "name": "fill_blanks",
+                "exercise": "692c3523d1c4614deb3aba4f",
+                "content": {
+                    "format": "dnd",
+                    "title": "<h3 fontsize=\"18px\" textalign=\"inherit\" class=\"my-0.5! py-0! mb-4 h3\" style=\"font-size: 18px; text-align: inherit !important; justify-content: inherit !important\" font-size=\"18px\">fill in the correct words - easy</h3>",
+                    "subTitle": "<p fontsize=\"18px\" textalign=\"inherit\" class=\"my-0.5! py-0!\" style=\"text-align: inherit !important; justify-content: inherit !important; font-size: 18px\" font-size=\"18px\"></p>",
+                    "placeholder": "בואו נתחיל לכתוב פה טקסט ואז לבחור את הטקסטים שבמקומם יופיע מקום ריק",
+                    "text": "<p style=\"text-align: inherit !important; justify-content: inherit !important; font-size: 18px\" class=\"\" font-size=\"18px\">Lets meet <blank id=\"692c362bd1c4614deb3aba59\" class=\"blank\">on</blank> Sunday <blank id=\"692c362ed1c4614deb3aba5a\" class=\"blank\">at</blank> 12 o'clock</p>",
+                    "blanks": [
+                        {
+                            "id": "692c362bd1c4614deb3aba59",
+                            "matches": [
+                                "on"
+                            ],
+                            "fillers": []
+                        },
+                        {
+                            "id": "692c362ed1c4614deb3aba5a",
+                            "matches": [
+                                "at"
+                            ],
+                            "fillers": []
+                        }
+                    ],
+                    "options": [],
+                    "keyboardSettings": {
+                        "showMathmaticalKeyboard": false,
+                        "keyboardList": [
+                            "FULL",
+                            "numeric",
+                            "symbols",
+                            "alphabetic"
+                        ],
+                        "id": null
+                    },
+                    "id": null
+                },
+                "position": 2,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "69284b4e038e8b39168d5339",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "type": "default",
+                    "submissionStyle": "inline",
+                    "annotations": {
+                        "level": [
+                            "easy"
+                        ],
+                        "id": null
+                    },
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "feedback_enabled": true,
+                    "levels": [
+                        {
+                            "code": "failed",
+                            "value": 0,
+                            "feedback": ""
+                        },
+                        {
+                            "code": "partial",
+                            "range": [
+                                1,
+                                50
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "decent",
+                            "range": [
+                                51,
+                                79
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "good",
+                            "range": [
+                                80,
+                                89
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "great",
+                            "range": [
+                                90,
+                                99
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "perfect",
+                            "value": 100,
+                            "feedback": ""
+                        }
+                    ]
+                },
+                "id": "692c3523d1c4614deb3aba4e",
+                "type": "question",
+                "created_on": 1764509859725,
+                "modified_on": 1764509859725
+            },
+            {
+                "slotId": "692c453c08c1543e89d4afcf",
+                "name": "fill_blanks",
+                "exercise": "692c44cc08c1543e89d4af79",
+                "content": {
+                    "format": "select",
+                    "title": "<h3 fontsize=\"18px\" textalign=\"inherit\" class=\"my-0.5! py-0! mb-4 h3\" style=\"font-size: 18px; text-align: inherit !important; justify-content: inherit !important\" font-size=\"18px\">fill in the correct words - medium</h3>",
+                    "subTitle": "",
+                    "placeholder": "בואו נתחיל לכתוב פה טקסט ואז לבחור את הטקסטים שבמקומם יופיע מקום ריק",
+                    "text": "<p style=\"text-align: inherit !important; justify-content: inherit !important; font-size: 18px\" class=\"\" font-size=\"18px\">Lets meet <blank id=\"692c362bd1c4614deb3aba59\" class=\"blank\">on</blank> Sunday <blank id=\"692c362ed1c4614deb3aba5a\" class=\"blank\">at</blank> 12 o'clock</p>",
+                    "blanks": [
+                        {
+                            "id": "692c362bd1c4614deb3aba59",
+                            "matches": [
+                                "on"
+                            ],
+                            "fillers": [
+                                "<p fontsize=\"18px\" textalign=\"inherit\" class=\"my-0.5! py-0!\" style=\"text-align: inherit !important; justify-content: inherit !important; font-size: 18px\" font-size=\"18px\">in</p>"
+                            ]
+                        },
+                        {
+                            "id": "692c362ed1c4614deb3aba5a",
+                            "matches": [
+                                "at"
+                            ],
+                            "fillers": []
+                        }
+                    ],
+                    "options": [],
+                    "keyboardSettings": {
+                        "showMathmaticalKeyboard": false,
+                        "keyboardList": [
+                            "FULL",
+                            "numeric",
+                            "symbols",
+                            "alphabetic"
+                        ],
+                        "id": null
+                    },
+                    "id": null
+                },
+                "position": 2,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "69284b4e038e8b39168d5339",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "type": "default",
+                    "submissionStyle": "inline",
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "feedback_enabled": true,
+                    "levels": [
+                        {
+                            "code": "failed",
+                            "value": 0,
+                            "feedback": ""
+                        },
+                        {
+                            "code": "partial",
+                            "range": [
+                                1,
+                                50
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "decent",
+                            "range": [
+                                51,
+                                79
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "good",
+                            "range": [
+                                80,
+                                89
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "great",
+                            "range": [
+                                90,
+                                99
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "perfect",
+                            "value": 100,
+                            "feedback": ""
+                        }
+                    ]
+                },
+                "id": "692c44cc08c1543e89d4af78",
+                "type": "question",
+                "created_on": 1764509859728,
+                "modified_on": 1764509859728
+            },
+            {
+                "slotId": "692c453c08c1543e89d4afcf",
+                "name": "fill_blanks",
+                "exercise": "692c452208c1543e89d4afb0",
+                "content": {
+                    "format": "input",
+                    "title": "<h3 fontsize=\"18px\" textalign=\"inherit\" class=\"my-0.5! py-0! mb-4 h3\" style=\"font-size: 18px; text-align: inherit !important; justify-content: inherit !important\" font-size=\"18px\">fill in the correct words - hard</h3>",
+                    "subTitle": "",
+                    "placeholder": "בואו נתחיל לכתוב פה טקסט ואז לבחור את הטקסטים שבמקומם יופיע מקום ריק",
+                    "text": "<p style=\"text-align: inherit !important; justify-content: inherit !important; font-size: 18px\" class=\"\" font-size=\"18px\">Lets meet <blank id=\"692c362bd1c4614deb3aba59\" class=\"blank\">on</blank> Sunday <blank id=\"692c362ed1c4614deb3aba5a\" class=\"blank\">at</blank> 12 o'clock</p>",
+                    "blanks": [
+                        {
+                            "id": "692c362bd1c4614deb3aba59",
+                            "matches": [
+                                "on"
+                            ],
+                            "fillers": []
+                        },
+                        {
+                            "id": "692c362ed1c4614deb3aba5a",
+                            "matches": [
+                                "at"
+                            ],
+                            "fillers": []
+                        }
+                    ],
+                    "options": [],
+                    "keyboardSettings": {
+                        "showMathmaticalKeyboard": false,
+                        "keyboardList": [
+                            "FULL",
+                            "numeric",
+                            "symbols",
+                            "alphabetic"
+                        ],
+                        "id": null
+                    },
+                    "id": null
+                },
+                "position": 2,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "69284b4e038e8b39168d5339",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "type": "default",
+                    "submissionStyle": "inline",
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "feedback_enabled": true,
+                    "levels": [
+                        {
+                            "code": "failed",
+                            "value": 0,
+                            "feedback": ""
+                        },
+                        {
+                            "code": "partial",
+                            "range": [
+                                1,
+                                50
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "decent",
+                            "range": [
+                                51,
+                                79
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "good",
+                            "range": [
+                                80,
+                                89
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "great",
+                            "range": [
+                                90,
+                                99
+                            ],
+                            "feedback": ""
+                        },
+                        {
+                            "code": "perfect",
+                            "value": 100,
+                            "feedback": ""
+                        }
+                    ]
+                },
+                "id": "692c452208c1543e89d4afaf",
+                "type": "question",
+                "created_on": 1764509859732,
+                "modified_on": 1764509859732
+            },
+            {
+                "slotId": "692c48bd930dc3810cee204a",
+                "name": "image",
+                "content": {
+                    "src": "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w1Mzk3MTZ8MHwxfHNlYXJjaHw2fHxjYXJzfGVufDB8fHx8MTc2NDUwMjk1NXww&ixlib=rb-4.1.0&q=80&w=1080",
+                    "width": "536.9994082737143px",
+                    "height": "NaNpx",
+                    "ratio": "auto",
+                    "fit": "fill",
+                    "alt": "yellow porsche 911 on road during daytime",
+                    "placement": "center",
+                    "id": null
+                },
+                "position": 2,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "6925c90a40498cf8752f73aa",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "annotations": {
+                        "theme": [
+                            "cars"
+                        ],
+                        "id": null
+                    },
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "levels": []
+                },
+                "id": "692c45c6ca4c9ad2e018e41d",
+                "type": "content",
+                "created_on": 1764509859735,
+                "modified_on": 1764510050504
+            },
+            {
+                "slotId": "692c48bd930dc3810cee204a",
+                "name": "image",
+                "content": {
+                    "src": "https://images.unsplash.com/photo-1589387045508-da1e215ca6eb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w1Mzk3MTZ8MHwxfHNlYXJjaHw4fHwlRDclOUIlRDclOTMlRDclOTUlRDclQTglRDclOTIlRDclOUN8ZW58MHx8fHwxNzY0NTAyOTA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+                    "width": "511.25424540826407px",
+                    "height": "NaNpx",
+                    "ratio": "auto",
+                    "fit": "fill",
+                    "alt": "man in white and blue soccer jersey standing on green field during daytime",
+                    "placement": "center",
+                    "id": null
+                },
+                "position": 2,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "6925c90a40498cf8752f73aa",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "annotations": {
+                        "theme": [
+                            "football"
+                        ],
+                        "id": null
+                    },
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "levels": []
+                },
+                "id": "692c45d7ca4c9ad2e018e42b",
+                "type": "content",
+                "created_on": 1764509859737,
+                "modified_on": 1764510050504
+            },
+            {
+                "name": "slot",
+                "position": 2,
+                "play": "6922e6c51f1753acdd9ef029",
+                "section": "6922e6c51f1753acdd9ef028",
+                "page": "6925c90a40498cf8752f73aa",
+                "tags": [],
+                "settings": {
+                    "optional": false,
+                    "id": null
+                },
+                "completion": {
+                    "coins": 0,
+                    "levels": []
+                },
+                "id": "692c48bd930dc3810cee204a",
+                "type": "content",
+                "created_on": 1764510050511,
+                "modified_on": 1764510050511
+            }
+        ],
+        "rules": [],
+        "exercises": [
+            {
+                "lesson": "6922e6c51f1753acdd9ef029",
+                "id": "692c3523d1c4614deb3aba4f",
+                "title": "EX #0",
+                "caption": "",
+                "course": "6922e6c51f1753acdd9ef025",
+                "questions": [
+                    "692c3523d1c4614deb3aba4e"
+                ],
+                "pages": [],
+                "subject": "",
+                "complexity": "low",
+                "difficulty": "medium",
+                "skills": [],
+                "completion": {
+                    "gradable": true,
+                    "attempts": 3,
+                    "id": null
+                },
+                "settings": {
+                    "question_set": [],
+                    "needs_review": false,
+                    "id": null
+                },
+                "position": 1,
+                "created_on": 1764509859580,
+                "modified_on": 1764510051356
+            },
+            {
+                "lesson": "6922e6c51f1753acdd9ef029",
+                "id": "692c44cc08c1543e89d4af79",
+                "title": "EX #1",
+                "caption": "",
+                "course": "6922e6c51f1753acdd9ef025",
+                "questions": [
+                    "692c44cc08c1543e89d4af78"
+                ],
+                "pages": [],
+                "subject": "",
+                "complexity": "low",
+                "difficulty": "medium",
+                "skills": [],
+                "completion": {
+                    "gradable": true,
+                    "attempts": 3,
+                    "id": null
+                },
+                "settings": {
+                    "question_set": [],
+                    "needs_review": false,
+                    "id": null
+                },
+                "position": 2,
+                "created_on": 1764509859581,
+                "modified_on": 1764510051357
+            },
+            {
+                "lesson": "6922e6c51f1753acdd9ef029",
+                "id": "692c452208c1543e89d4afb0",
+                "title": "EX #1",
+                "caption": "",
+                "course": "6922e6c51f1753acdd9ef025",
+                "questions": [
+                    "692c452208c1543e89d4afaf"
+                ],
+                "pages": [],
+                "subject": "",
+                "complexity": "low",
+                "difficulty": "medium",
+                "skills": [],
+                "completion": {
+                    "gradable": true,
+                    "attempts": 3,
+                    "id": null
+                },
+                "settings": {
+                    "question_set": [],
+                    "needs_review": false,
+                    "id": null
+                },
+                "position": 3,
+                "created_on": 1764509859582,
+                "modified_on": 1764510051357
+            }
+        ]
+    }
+}
