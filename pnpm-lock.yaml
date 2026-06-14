@@ -205,9 +205,6 @@ importers:
       '@amit/chatbot':
         specifier: workspace:*
         version: link:../packages/chatbot
-      '@amit/copilot':
-        specifier: workspace:*
-        version: link:../packages/copilot
       '@amit/player-session':
         specifier: workspace:*
         version: link:../packages/player-session

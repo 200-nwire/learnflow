@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@amit/chatbot": "workspace:*",
-    "@amit/copilot": "workspace:*",
     "@amit/player-session": "workspace:*",
     "@amit/player-signals": "workspace:*",
     "@amit/player-variants": "workspace:*",
