@@ -39,6 +39,14 @@
             class="nav-button"
           />
           <Button 
+            label="Semantic Layout"
+            icon="pi pi-objects-column"
+            :severity="$route.name === 'semantic-layout' ? 'info' : 'secondary'"
+            :text="$route.name !== 'semantic-layout'"
+            @click="$router.push('/semantic-layout')"
+            class="nav-button"
+          />
+          <Button 
             label="Rules Builder"
             icon="pi pi-code"
             :severity="$route.name === 'rules' ? 'info' : 'secondary'"

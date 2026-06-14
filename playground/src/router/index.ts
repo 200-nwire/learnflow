@@ -6,6 +6,7 @@ import RulesSimulator from '../views/RulesSimulator.vue';
 import DemoView from '../views/DemoView.vue';
 import ChatbotSimulator from '../views/ChatbotSimulator.vue';
 import ChatbotSimulatorV2 from '../views/ChatbotSimulatorV2.vue';
+import SemanticLayoutView from '../views/SemanticLayoutView.vue';
 
 const routes = [
   {
@@ -53,6 +54,12 @@ const routes = [
     name: 'chatbot-v2',
     component: ChatbotSimulatorV2,
     meta: { title: 'Chatbot Simulator V2' }
+  },
+  {
+    path: '/semantic-layout',
+    name: 'semantic-layout',
+    component: SemanticLayoutView,
+    meta: { title: 'Semantic Layout' }
   }
 ];
 
