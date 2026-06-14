@@ -23,6 +23,12 @@
         <button class="btn" @click="addDecisionQuick" title="Add a decision fork">◆ Decision</button>
         <button class="btn" @click="toggleExtras">{{ extrasCollapsed ? 'Show extras' : 'Focus core' }}</button>
         <button class="btn" :class="{ on: showFlow }" @click="showFlow = !showFlow" title="Show the resolved learner journey">Flow ▸</button>
+        <span class="vsep" />
+        <button class="btn sm" :class="{ on: view.lanes }" @click="view.lanes = !view.lanes" title="Show / hide lanes">Lanes</button>
+        <button class="btn sm" :class="{ on: view.stages }" @click="view.stages = !view.stages" title="Show / hide stages">Stages</button>
+        <button class="btn sm" :class="{ on: view.edges }" @click="view.edges = !view.edges" title="Show / hide flows">Edges</button>
+        <button class="btn sm" :class="{ on: view.edgesTop }" @click="view.edgesTop = !view.edgesTop" title="Draw flows above sections">⬆ top</button>
+        <button class="btn sm" @click="flowsOnly" title="Declutter — just sections &amp; flows">Flows only</button>
         <button class="btn primary" @click="doFit">Fit</button>
       </div>
     </header>
@@ -32,13 +38,14 @@
       <div class="canvas">
         <VueFlow
           v-model:nodes="flowNodes"
-          :edges="displayEdges"
+          :edges="view.edges ? displayEdges : []"
           :node-types="nodeTypes"
+          :edge-types="edgeTypes"
           :nodes-draggable="true"
           :nodes-connectable="false"
           :default-viewport="{ zoom: 0.82, x: 0, y: 0 }"
           :min-zoom="0.2" :max-zoom="2.5"
-          :class="['flow', { hovering: !!hovered, dragging: !!draggingId }]"
+          :class="['flow', { hovering: !!hovered, dragging: !!draggingId, 'edges-top': view.edgesTop }]"
           @nodes-change="onNodesChange"
           @connect="onConnect"
           @edge-click="onEdgeClick"
@@ -57,7 +64,7 @@
           <!-- Canvas-space overlay: bands, rows, gutter, ghost add-cells -->
           <div class="overlay-wrap">
             <div class="overlay" :style="overlayStyle">
-              <div v-for="band in bands" :key="'b' + band.id" class="band" :class="{ collapsed: band.collapsed }"
+              <div v-for="band in bands" :key="'b' + band.id" v-show="view.lanes" class="band" :class="{ collapsed: band.collapsed }"
                 :style="bandStyle(band)">
                 <div v-if="band.collapsed" class="rail">
                   <span class="ri">{{ LANES[band.id].icon }}</span>
@@ -72,8 +79,8 @@
               </template>
 
               <template v-for="row in rows" :key="'r' + row.stage">
-                <div class="rowsep" :style="{ top: row.y - 20 + 'px', width: contentWidth + 'px' }" />
-                <div class="slabel" :style="{ top: row.y + 'px', height: row.height + 'px' }">
+                <div v-show="view.stages" class="rowsep" :style="{ top: row.y - 20 + 'px', width: contentWidth + 'px' }" />
+                <div v-show="view.stages" class="slabel" :style="{ top: row.y + 'px', height: row.height + 'px' }">
                   <span class="sn">{{ row.stage }}</span><span class="sw">stage</span>
                 </div>
               </template>
@@ -90,7 +97,7 @@
         </VueFlow>
 
         <!-- Sticky lane headers -->
-        <div class="sticky">
+        <div v-show="view.lanes" class="sticky">
           <div v-for="h in headerScreens" :key="'h' + h.id" class="lh" :class="{ collapsed: h.collapsed }"
             :style="{ left: h.left + 'px', width: h.width + 'px', '--accent': LANES[h.id].accent }">
             <span class="lhi" @click="toggleLane(h.id)">{{ LANES[h.id].icon }}</span>
@@ -133,19 +140,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, provide } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick, provide } from 'vue';
 import { VueFlow, useVueFlow, MarkerType } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
 import { MiniMap } from '@vue-flow/minimap';
 import SectionNode from '../semantic-layout/components/SectionNode.vue';
 import DecisionNode from '../semantic-layout/components/DecisionNode.vue';
+import FlowEdge from '../semantic-layout/components/FlowEdge.vue';
 import Inspector from '../semantic-layout/components/Inspector.vue';
 import ProfilePanel from '../semantic-layout/components/ProfilePanel.vue';
 import FlowPreview from '../semantic-layout/components/FlowPreview.vue';
 import { useCourse } from '../semantic-layout/store/useCourse';
 import { useLearner } from '../semantic-layout/store/useLearner';
 import { useLayout } from '../semantic-layout/engine/useLayout';
+import { routeEdges } from '../semantic-layout/engine/routeEdges';
 import { LANES, LANE_ORDER, isSection, type SectionLane } from '../semantic-layout/model/types';
 import { describe } from '../semantic-layout/model/rules';
 import { validateCourse } from '../semantic-layout/model/wiring';
@@ -156,6 +165,9 @@ const { fitView, viewport } = useVueFlow();
 const { result, pending, schedule, config } = useLayout();
 
 const nodeTypes: any = { section: SectionNode, decision: DecisionNode };
+const edgeTypes: any = { flow: FlowEdge };
+const view = reactive({ lanes: true, stages: true, edges: true, edgesTop: false });
+function flowsOnly() { const off = view.lanes || view.stages; view.lanes = !off; view.stages = !off; }
 
 // measured sizes kept OUT of course state (no undo pollution)
 const measured = ref<Record<string, { w: number; h: number }>>({});
@@ -218,16 +230,23 @@ function ports(src: string, tgt: string) {
   if (Math.abs(dx) > Math.abs(dy)) return dx >= 0 ? { sh: 's-right', th: 't-left' } : { sh: 's-left', th: 't-right' };
   return dy >= 0 ? { sh: 's-bottom', th: 't-top' } : { sh: 's-top', th: 't-bottom' };
 }
-const baseEdges = computed(() => course.state.links.filter(l => placements.value[l.source] && placements.value[l.target]).map(l => {
-  const kind = l.kind ?? 'branch';
-  const color = kind === 'branch' ? '#6366f1' : LANES[kind as SectionLane]?.accent ?? '#94a3b8';
-  const p = ports(l.source, l.target);
-  const guarded = !!l.guard && l.guard.type !== 'always';
-  return { id: l.id, source: l.source, target: l.target, sourceHandle: p.sh, targetHandle: p.th,
-    type: 'smoothstep', markerEnd: MarkerType.ArrowClosed, label: guarded ? (l.label ?? describe(l.guard)) : undefined,
-    labelBgStyle: { fill: '#fff' }, labelStyle: { fontSize: '10px', fill: color, fontWeight: 600 },
-    _color: color, _guarded: guarded };
-}));
+const baseEdges = computed(() => {
+  const links = course.state.links.filter(l => placements.value[l.source] && placements.value[l.target]);
+  const seen: Record<string, number> = {};
+  return links.map(l => {
+    const kind = l.kind ?? 'branch';
+    const color = kind === 'branch' ? '#6366f1' : LANES[kind as SectionLane]?.accent ?? '#94a3b8';
+    const p = ports(l.source, l.target);
+    const guarded = !!l.guard && l.guard.type !== 'always';
+    const idx = seen[l.source] = (seen[l.source] ?? 0); seen[l.source] = idx + 1; // separate parallel siblings
+    return { id: l.id, source: l.source, target: l.target, sourceHandle: p.sh, targetHandle: p.th,
+      type: 'flow', markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
+      _color: color, _guarded: guarded, _label: guarded ? (l.label ?? describe(l.guard)) : undefined, _offset: 14 + idx * 12 };
+  });
+});
+
+// obstacle-avoiding routes through the gutters (recompute when layout changes)
+const routes = computed(() => routeEdges(placements.value, bands.value as any, rows.value as any, config, course.state.links as any));
 
 // hover
 const hovered = ref<string | null>(null);
@@ -244,16 +263,11 @@ provide('selectedId', course.selectedNodeId);
 
 const displayEdges = computed(() => baseEdges.value.map(e => {
   const h = hovered.value;
-  const onHover = h ? (e.source === h || e.target === h) : null;
+  const onHover = h ? (e.source === h || e.target === h) : false;
   const act = active.value.links.has(e.id);
-  const opacity = h ? (onHover ? 1 : 0.1) : (act ? 1 : 0.2);
-  const animated = h ? !!onHover : act;
-  const w = act ? (e._guarded ? 2.6 : 3.2) : (e._guarded ? 1.4 : 1.6);
-  return { ...e, animated, style: {
-    stroke: e._color, strokeWidth: w,
-    strokeDasharray: e._guarded ? '6 4' : undefined, opacity,
-    filter: act && !h ? 'drop-shadow(0 1px 2px ' + e._color + '55)' : undefined,
-  } };
+  const dim = h ? !onHover : !act;
+  return { ...e, animated: h ? onHover : act,
+    data: { color: e._color, active: act || onHover, guarded: e._guarded, label: e._label, dim, points: routes.value[e.id] } };
 }));
 
 // ── interactions ────────────────────────────────────────────────────────────
@@ -427,6 +441,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .btn:hover:not(:disabled) { background: #f3f4f6; } .btn:disabled { opacity: .4; cursor: default; }
 .btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
 .btn.on { background: #eef2ff; border-color: #818cf8; color: #4338ca; }
+.btn.sm { padding: 6px 9px; font-size: 11.5px; }
+.vsep { width: 1px; height: 22px; background: #e7eaf0; margin: 0 3px; align-self: center; }
 
 .body { flex: 1; display: flex; min-height: 0; }
 .canvas { flex: 1; position: relative; overflow: hidden; }
@@ -462,6 +478,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .flow.dragging :deep(.vue-flow__node.dragging) { z-index: 10000 !important; filter: drop-shadow(0 12px 24px rgba(16,24,40,.28)); }
 .flow :deep(.vue-flow__node) .sec, .flow :deep(.vue-flow__node) .dec { cursor: grab; }
 .flow.dragging :deep(.vue-flow__node.dragging) .sec, .flow.dragging :deep(.vue-flow__node.dragging) .dec { cursor: grabbing; }
+/* edges-on-top: lift the flows above sections so the path is never buried */
+.flow.edges-top :deep(.vue-flow__edges) { z-index: 5; }
+.flow.edges-top :deep(.vue-flow__node) { z-index: 1; }
+.flow.edges-top :deep(.vue-flow__node.dragging) { z-index: 10000 !important; }
 .rail { position: absolute; top: 16px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .ri { font-size: 15px; } .rt { writing-mode: vertical-rl; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
 .rowsep { position: absolute; left: 0; height: 1px; background: repeating-linear-gradient(to right, #e2e8f0 0 6px, transparent 6px 12px); }

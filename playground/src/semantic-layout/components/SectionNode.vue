@@ -35,6 +35,8 @@
     <Handle id="s-right" type="source" :position="Position.Right" class="h hr" />
     <Handle id="s-left" type="source" :position="Position.Left" class="h hl2" />
     <Handle id="t-right" type="target" :position="Position.Right" class="h hr2" />
+    <Handle id="s-top" type="source" :position="Position.Top" class="h ht" />
+    <Handle id="t-bottom" type="target" :position="Position.Bottom" class="h hb" />
   </div>
 </template>
 
