@@ -36,9 +36,9 @@ const { profile, active, skills } = learner;
 </script>
 
 <style scoped>
-.profile { position: absolute; left: 14px; bottom: 14px; width: 240px; background: rgba(255,255,255,.96);
+.profile { width: 240px; background: rgba(255,255,255,.96);
   backdrop-filter: blur(6px); border: 1px solid #e7eaf0; border-radius: 14px; padding: 13px 14px;
-  box-shadow: 0 10px 30px rgba(16,24,40,.14); z-index: 15; }
+  box-shadow: 0 10px 30px rgba(16,24,40,.14); }
 .ph { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.18); }
 .pt { font-size: 12.5px; font-weight: 700; color: #111827; }

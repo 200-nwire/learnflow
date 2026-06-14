@@ -132,10 +132,23 @@ export function deriveActivePath(course: Course, p: LearnerProfile): ActivePath 
     if (!node) return;
     if (eligible.has(id) && isSection(node)) sections.add(id);
 
-    // gravity model: every outgoing link whose guard passes fires independently
-    // (an unguarded link is always taken — e.g. the core spine)
-    for (const l of outBySource.get(id) ?? []) {
+    const outs = outBySource.get(id) ?? [];
+
+    // Support is an either/or DETOUR: if a support branch fires, the learner
+    // reaches the next core THROUGH it — so suppress the direct core hop it
+    // replaces. (Enrichment / advanced are additive side-trips and don't.)
+    const bypass = new Set<string>();
+    for (const l of outs) {
+      if (l.kind !== 'support' || !evaluate(l.guard, p)) continue;
+      const t = byId.get(l.target);
+      if (t && isSection(t) && !eligible.has(l.target)) continue;
+      for (const m of outBySource.get(l.target) ?? []) if (m.kind === 'support') bypass.add(m.target);
+    }
+
+    // every outgoing link whose guard passes fires (unguarded = always, e.g. spine)
+    for (const l of outs) {
       if (!evaluate(l.guard, p)) continue;
+      if (l.kind === 'core' && bypass.has(l.target)) continue; // replaced by a support detour
       const targetNode = byId.get(l.target);
       if (!targetNode) continue;
       if (isSection(targetNode) && !eligible.has(l.target)) continue; // ineligible target blocks

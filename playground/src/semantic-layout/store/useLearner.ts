@@ -25,12 +25,23 @@ function seed(): LearnerProfile {
   return p;
 }
 
+export interface RoutePreset { id: string; label: string; sub: string; icon: string; score: number; mastery: number; }
+export const ROUTE_PRESETS: RoutePreset[] = [
+  { id: 'help', label: 'Support route', sub: 'struggling learner', icon: '🛟', score: 45, mastery: 0.3 },
+  { id: 'core', label: 'Core route', sub: 'on-track learner', icon: '📘', score: 75, mastery: 0.65 },
+  { id: 'adv', label: 'Advanced route', sub: 'flying learner', icon: '🚀', score: 92, mastery: 0.92 },
+];
+
 export function useLearner() {
   const { state } = useCourse();
   const active = computed(() => deriveActivePath(state, profile));
 
   function setMastery(skill: string, v: number) { profile.mastery[skill] = v; }
   function setScore(v: number) { profile.score = v; }
+  function applyPreset(p: RoutePreset) {
+    profile.score = p.score;
+    for (const s of sampleCourse.skills ?? []) profile.mastery[s.id] = p.mastery;
+  }
   function reset() {
     const s = seed();
     profile.mastery = s.mastery; profile.score = s.score;
@@ -38,5 +49,5 @@ export function useLearner() {
     profile.attempts = s.attempts; profile.vars = s.vars;
   }
 
-  return { profile, active, setMastery, setScore, reset, skills: sampleCourse.skills ?? [] };
+  return { profile, active, setMastery, setScore, applyPreset, reset, presets: ROUTE_PRESETS, skills: sampleCourse.skills ?? [] };
 }

@@ -18,6 +18,7 @@
       </div>
 
       <div class="tb-actions">
+        <button class="btn round" @click="showHelp = true" title="How this works — theory &amp; guides">?</button>
         <button class="btn" :disabled="!course.canUndo.value" @click="course.undo()" title="Undo (⌘Z)">↶</button>
         <button class="btn" :disabled="!course.canRedo.value" @click="course.redo()" title="Redo (⇧⌘Z)">↷</button>
         <button class="btn" @click="addDecisionQuick" title="Add a decision fork">◆ Decision</button>
@@ -29,6 +30,7 @@
         <button class="btn sm" :class="{ on: view.edges }" @click="view.edges = !view.edges" title="Show / hide flows">Edges</button>
         <button class="btn sm" :class="{ on: view.edgesTop }" @click="view.edgesTop = !view.edgesTop" title="Draw flows above sections">⬆ top</button>
         <button class="btn sm" @click="flowsOnly" title="Declutter — just sections &amp; flows">Flows only</button>
+        <button class="btn sm" :class="{ on: mode === 'dag' }" @click="toggleMode" title="See the whole flow as one directed graph">DAG</button>
         <button class="btn primary" @click="doFit">Fit</button>
       </div>
     </header>
@@ -41,7 +43,7 @@
           :edges="view.edges ? displayEdges : []"
           :node-types="nodeTypes"
           :edge-types="edgeTypes"
-          :nodes-draggable="true"
+          :nodes-draggable="mode === 'grid'"
           :nodes-connectable="false"
           :default-viewport="{ zoom: 0.82, x: 0, y: 0 }"
           :min-zoom="0.2" :max-zoom="2.5"
@@ -64,7 +66,7 @@
           <!-- Canvas-space overlay: bands, rows, gutter, ghost add-cells -->
           <div class="overlay-wrap">
             <div class="overlay" :style="overlayStyle">
-              <div v-for="band in bands" :key="'b' + band.id" v-show="view.lanes" class="band" :class="{ collapsed: band.collapsed }"
+              <div v-for="band in bands" :key="'b' + band.id" v-show="view.lanes && mode === 'grid'" class="band" :class="{ collapsed: band.collapsed }"
                 :style="bandStyle(band)">
                 <div v-if="band.collapsed" class="rail">
                   <span class="ri">{{ LANES[band.id].icon }}</span>
@@ -79,19 +81,19 @@
               </template>
 
               <template v-for="row in rows" :key="'r' + row.stage">
-                <div v-show="view.stages" class="rowsep" :style="{ top: row.y - 20 + 'px', width: contentWidth + 'px' }" />
-                <div v-show="view.stages" class="slabel" :style="{ top: row.y + 'px', height: row.height + 'px' }">
+                <div v-show="view.stages && mode === 'grid'" class="rowsep" :style="{ top: row.y - 20 + 'px', width: contentWidth + 'px' }" />
+                <div v-show="view.stages && mode === 'grid'" class="slabel" :style="{ top: row.y + 'px', height: row.height + 'px' }">
                   <span class="sn">{{ row.stage }}</span><span class="sw">stage</span>
                 </div>
               </template>
 
               <!-- ghost add-cells in empty (lane, stage) cells -->
-              <button v-for="g in ghosts" :key="g.key" class="ghost"
+              <button v-for="g in ghosts" :key="g.key" v-show="mode === 'grid'" class="ghost"
                 :style="{ left: g.x + 'px', top: g.y + 'px', width: g.w + 'px', height: g.h + 'px' }"
                 @click="course.addSection(g.lane, g.stage)">+ add {{ g.lane }}</button>
 
               <!-- add a new stage -->
-              <button class="ghost addstage" :style="addStageStyle" @click="addStage">+ add stage</button>
+              <button class="ghost addstage" v-show="mode === 'grid'" :style="addStageStyle" @click="addStage">+ add stage</button>
             </div>
           </div>
         </VueFlow>
@@ -110,7 +112,10 @@
           </div>
         </div>
 
-        <ProfilePanel />
+        <div class="bl-stack">
+          <RoutesQuick />
+          <ProfilePanel />
+        </div>
 
         <!-- live sense-check: does the student path make sense? -->
         <div class="sensecheck" :class="{ bad: issues.some(i => i.level === 'error'), warn: issues.length && !issues.some(i => i.level === 'error') }">
@@ -134,8 +139,10 @@
       <span><b>{{ rows.length }}</b> stages</span>
       <span><b>{{ 4 - collapsed.size }}</b>/4 lanes</span>
       <span :class="['pdot', { busy: pending }]">{{ pending ? 'laying out…' : 'idle' }}</span>
-      <span class="muted">drag a handle → another node to link · click a link to add a condition · ⌘Z undo</span>
+      <span class="muted">drag a section to move/reorganize · slide the profile to adapt · ? for the guide</span>
     </footer>
+
+    <HelpPanel v-if="showHelp" @close="showHelp = false" />
   </div>
 </template>
 
@@ -150,7 +157,10 @@ import DecisionNode from '../semantic-layout/components/DecisionNode.vue';
 import FlowEdge from '../semantic-layout/components/FlowEdge.vue';
 import Inspector from '../semantic-layout/components/Inspector.vue';
 import ProfilePanel from '../semantic-layout/components/ProfilePanel.vue';
+import RoutesQuick from '../semantic-layout/components/RoutesQuick.vue';
 import FlowPreview from '../semantic-layout/components/FlowPreview.vue';
+import HelpPanel from '../semantic-layout/components/HelpPanel.vue';
+import { dagLayout } from '../semantic-layout/engine/dagLayout';
 import { useCourse } from '../semantic-layout/store/useCourse';
 import { useLearner } from '../semantic-layout/store/useLearner';
 import { useLayout } from '../semantic-layout/engine/useLayout';
@@ -174,8 +184,14 @@ const measured = ref<Record<string, { w: number; h: number }>>({});
 const collapsed = ref<Set<SectionLane>>(new Set());
 const selGroup = course.selectedGroupId;
 const showFlow = ref(false);
+const showHelp = ref(false);
+const mode = ref<'grid' | 'dag'>('grid');
 const showIssues = ref(false);
 const issues = computed(() => validateCourse(course.state));
+function toggleMode() {
+  mode.value = mode.value === 'grid' ? 'dag' : 'grid';
+  nextTick(() => setTimeout(() => fitView({ padding: 0.15, duration: 400 }), 60));
+}
 
 const sectionCount = computed(() => course.state.nodes.filter(isSection).length);
 const maxStage = computed(() => course.state.nodes.reduce((m, n) => Math.max(m, n.stage), 1));
@@ -195,7 +211,11 @@ watch([items, groupsForLayout, collapsed],
   () => schedule(items.value as any, groupsForLayout.value as any, Array.from(collapsed.value)),
   { immediate: true });
 
-const placements = computed(() => result.value?.placements ?? {});
+const dagResult = computed(() => mode.value === 'dag'
+  ? dagLayout(course.state.nodes as any, course.state.links as any, id => ({ w: 230, h: measured.value[id]?.h ?? 84 }))
+  : { boxes: {}, routes: {} });
+const dagPlacements = computed(() => dagResult.value.boxes);
+const placements = computed(() => mode.value === 'dag' ? dagPlacements.value : (result.value?.placements ?? {}));
 const groupRects = computed(() => result.value?.groups ?? []);
 const groupById = computed(() => Object.fromEntries(course.state.groups.map(g => [g.id, g])));
 const bands = computed(() => result.value?.bands ?? LANE_ORDER.map(id => ({ id, x: 0, width: 0, collapsed: collapsed.value.has(id), count: 0 })));
@@ -204,11 +224,11 @@ const contentWidth = computed(() => result.value?.contentWidth ?? 0);
 
 // ── nodes (ref, rebuilt only when layout result changes) ───────────────────
 const flowNodes = ref<any[]>([]);
-watch(result, () => {
+watch([result, mode, dagPlacements], () => {
   const p = placements.value;
   flowNodes.value = course.state.nodes.filter(n => p[n.id]).map(n => {
     const pl = p[n.id];
-    const base = { id: n.id, position: { x: pl.x, y: pl.y }, draggable: true, style: { width: pl.width + 'px' } };
+    const base = { id: n.id, position: { x: pl.x, y: pl.y }, draggable: mode.value === 'grid', style: { width: pl.width + 'px' } };
     if (n.kind === 'decision') return { ...base, type: 'decision', data: { prompt: n.prompt } };
     const g = n.parentGroupId ? groupById.value[n.parentGroupId] : undefined;
     return { ...base, type: 'section', data: {
@@ -246,7 +266,9 @@ const baseEdges = computed(() => {
 });
 
 // obstacle-avoiding routes through the gutters (recompute when layout changes)
-const routes = computed(() => routeEdges(placements.value, bands.value as any, rows.value as any, config, course.state.links as any));
+const routes = computed<Record<string, any>>(() => mode.value === 'dag'
+  ? dagResult.value.routes
+  : routeEdges(placements.value, bands.value as any, rows.value as any, config, course.state.links as any));
 
 // hover
 const hovered = ref<string | null>(null);
@@ -442,6 +464,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
 .btn.on { background: #eef2ff; border-color: #818cf8; color: #4338ca; }
 .btn.sm { padding: 6px 9px; font-size: 11.5px; }
+.btn.round { width: 30px; padding: 0; border-radius: 999px; font-weight: 800; font-size: 14px; color: #2563eb; border-color: #bfdbfe; }
 .vsep { width: 1px; height: 22px; background: #e7eaf0; margin: 0 3px; align-self: center; }
 
 .body { flex: 1; display: flex; min-height: 0; }
@@ -506,6 +529,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .info { display: flex; align-items: center; gap: 18px; padding: 7px 18px; background: #fff; border-top: 1px solid #e7eaf0; font-size: 12px; color: #475467; }
 .info b { color: #111827; } .info .muted { margin-left: auto; color: #98a2b3; }
 .pdot { font-size: 11px; color: #94a3b8; } .pdot.busy { color: #2563eb; }
+
+/* bottom-left stack: quick routes + learner profile */
+.bl-stack { position: absolute; left: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 10px; z-index: 15; }
 
 /* live sense-check chip */
 .sensecheck { position: absolute; right: 14px; bottom: 14px; z-index: 16; }
