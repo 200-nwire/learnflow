@@ -22,6 +22,7 @@
         <button class="btn" :disabled="!course.canRedo.value" @click="course.redo()" title="Redo (⇧⌘Z)">↷</button>
         <button class="btn" @click="addDecisionQuick" title="Add a decision fork">◆ Decision</button>
         <button class="btn" @click="toggleExtras">{{ extrasCollapsed ? 'Show extras' : 'Focus core' }}</button>
+        <button class="btn" :class="{ on: showFlow }" @click="showFlow = !showFlow" title="Show the resolved learner journey">Flow ▸</button>
         <button class="btn primary" @click="doFit">Fit</button>
       </div>
     </header>
@@ -33,14 +34,18 @@
           v-model:nodes="flowNodes"
           :edges="displayEdges"
           :node-types="nodeTypes"
-          :nodes-draggable="false"
+          :nodes-draggable="true"
+          :nodes-connectable="false"
           :default-viewport="{ zoom: 0.82, x: 0, y: 0 }"
           :min-zoom="0.2" :max-zoom="2.5"
-          :class="['flow', { hovering: !!hovered }]"
+          :class="['flow', { hovering: !!hovered, dragging: !!draggingId }]"
           @nodes-change="onNodesChange"
           @connect="onConnect"
           @edge-click="onEdgeClick"
           @pane-click="course.clearSelection()"
+          @node-drag-start="onDragStart"
+          @node-drag="onDrag"
+          @node-drag-stop="onDragStop"
         >
           <Background :gap="22" pattern-color="#eef1f6" />
           <Controls :show-interactive="false" />
@@ -59,6 +64,12 @@
                   <span class="rt">{{ LANES[band.id].short }}</span>
                 </div>
               </div>
+
+              <!-- drag-and-drop target indicator -->
+              <template v-if="dropHint">
+                <div class="drop-cell" :style="dropCellStyle" />
+                <div class="drop-line" :style="dropLineStyle" />
+              </template>
 
               <template v-for="row in rows" :key="'r' + row.stage">
                 <div class="rowsep" :style="{ top: row.y - 20 + 'px', width: contentWidth + 'px' }" />
@@ -93,9 +104,22 @@
         </div>
 
         <ProfilePanel />
+
+        <!-- live sense-check: does the student path make sense? -->
+        <div class="sensecheck" :class="{ bad: issues.some(i => i.level === 'error'), warn: issues.length && !issues.some(i => i.level === 'error') }">
+          <button class="sc-toggle" @click="showIssues = !showIssues">
+            <template v-if="!issues.length">✓ path makes sense</template>
+            <template v-else>⚠ {{ issues.length }} to check</template>
+          </button>
+          <div v-if="showIssues && issues.length" class="sc-list">
+            <div v-for="(it, i) in issues" :key="i" class="sc-item" :class="it.level"
+              @click="it.nodeId && course.select(it.nodeId)">{{ it.msg }}</div>
+          </div>
+        </div>
       </div>
 
       <Inspector />
+      <FlowPreview v-if="showFlow" @close="showFlow = false" />
     </div>
 
     <footer class="info">
@@ -118,36 +142,50 @@ import SectionNode from '../semantic-layout/components/SectionNode.vue';
 import DecisionNode from '../semantic-layout/components/DecisionNode.vue';
 import Inspector from '../semantic-layout/components/Inspector.vue';
 import ProfilePanel from '../semantic-layout/components/ProfilePanel.vue';
+import FlowPreview from '../semantic-layout/components/FlowPreview.vue';
 import { useCourse } from '../semantic-layout/store/useCourse';
 import { useLearner } from '../semantic-layout/store/useLearner';
 import { useLayout } from '../semantic-layout/engine/useLayout';
 import { LANES, LANE_ORDER, isSection, type SectionLane } from '../semantic-layout/model/types';
 import { describe } from '../semantic-layout/model/rules';
+import { validateCourse } from '../semantic-layout/model/wiring';
 
 const course = useCourse();
 const { active } = useLearner();
 const { fitView, viewport } = useVueFlow();
-const { result, pending, schedule } = useLayout();
+const { result, pending, schedule, config } = useLayout();
 
 const nodeTypes: any = { section: SectionNode, decision: DecisionNode };
 
 // measured sizes kept OUT of course state (no undo pollution)
 const measured = ref<Record<string, { w: number; h: number }>>({});
 const collapsed = ref<Set<SectionLane>>(new Set());
+const selGroup = course.selectedGroupId;
+const showFlow = ref(false);
+const showIssues = ref(false);
+const issues = computed(() => validateCourse(course.state));
 
 const sectionCount = computed(() => course.state.nodes.filter(isSection).length);
 const maxStage = computed(() => course.state.nodes.reduce((m, n) => Math.max(m, n.stage), 1));
 
-// items → layout (worker)
+// items + groups → layout (worker)
 const items = computed(() => course.state.nodes.map(n => {
   const m = measured.value[n.id];
+  const common = { id: n.id, lane: n.lane, stage: n.stage, parentGroupId: n.parentGroupId, order: n.order };
   return n.kind === 'decision'
-    ? { id: n.id, lane: n.lane, stage: n.stage, width: m?.w ?? 140, height: m?.h ?? 64 }
-    : { id: n.id, lane: n.lane, stage: n.stage, height: m?.h };
+    ? { ...common, width: m?.w ?? 140, height: m?.h ?? 64 }
+    : { ...common, height: m?.h };
 }));
-watch([items, collapsed], () => schedule(items.value as any, Array.from(collapsed.value)), { immediate: true });
+const groupsForLayout = computed(() => course.state.groups.map(g => ({
+  id: g.id, lane: g.lane, stage: g.stage, parentGroupId: g.parentGroupId, order: g.order, mode: g.mode, label: g.label,
+})));
+watch([items, groupsForLayout, collapsed],
+  () => schedule(items.value as any, groupsForLayout.value as any, Array.from(collapsed.value)),
+  { immediate: true });
 
 const placements = computed(() => result.value?.placements ?? {});
+const groupRects = computed(() => result.value?.groups ?? []);
+const groupById = computed(() => Object.fromEntries(course.state.groups.map(g => [g.id, g])));
 const bands = computed(() => result.value?.bands ?? LANE_ORDER.map(id => ({ id, x: 0, width: 0, collapsed: collapsed.value.has(id), count: 0 })));
 const rows = computed(() => result.value?.rows ?? []);
 const contentWidth = computed(() => result.value?.contentWidth ?? 0);
@@ -158,12 +196,15 @@ watch(result, () => {
   const p = placements.value;
   flowNodes.value = course.state.nodes.filter(n => p[n.id]).map(n => {
     const pl = p[n.id];
-    const base = { id: n.id, position: { x: pl.x, y: pl.y }, draggable: false, style: { width: pl.width + 'px' } };
+    const base = { id: n.id, position: { x: pl.x, y: pl.y }, draggable: true, style: { width: pl.width + 'px' } };
     if (n.kind === 'decision') return { ...base, type: 'decision', data: { prompt: n.prompt } };
+    const g = n.parentGroupId ? groupById.value[n.parentGroupId] : undefined;
     return { ...base, type: 'section', data: {
       lane: n.lane, label: n.label, description: n.description, pages: n.pages,
       isStart: n.isStart, isEnd: n.isEnd, optional: n.optional,
       rule: n.entryRule ? describe(n.entryRule) : undefined,
+      groupMode: g?.mode,
+      seq: g?.mode === 'all' ? n.order : undefined,
     } };
   });
 });
@@ -205,15 +246,71 @@ const displayEdges = computed(() => baseEdges.value.map(e => {
   const h = hovered.value;
   const onHover = h ? (e.source === h || e.target === h) : null;
   const act = active.value.links.has(e.id);
-  const opacity = h ? (onHover ? 1 : 0.12) : (act ? 1 : 0.28);
+  const opacity = h ? (onHover ? 1 : 0.1) : (act ? 1 : 0.2);
   const animated = h ? !!onHover : act;
+  const w = act ? (e._guarded ? 2.6 : 3.2) : (e._guarded ? 1.4 : 1.6);
   return { ...e, animated, style: {
-    stroke: e._color, strokeWidth: e._guarded ? 1.6 : (act ? 2.4 : 1.8),
+    stroke: e._color, strokeWidth: w,
     strokeDasharray: e._guarded ? '6 4' : undefined, opacity,
+    filter: act && !h ? 'drop-shadow(0 1px 2px ' + e._color + '55)' : undefined,
   } };
 }));
 
 // ── interactions ────────────────────────────────────────────────────────────
+// ── drag & drop: move/reorder sections across lanes, stages and group trees ─
+const draggingId = ref<string | null>(null);
+const dropHint = ref<{ lane: SectionLane; stage: number; parentGroupId?: string; index: number; lineY: number } | null>(null);
+
+function cellHit(cx: number, cy: number): { lane: SectionLane; stage: number } | null {
+  const band = bands.value.find(b => !b.collapsed && cx >= b.x && cx <= b.x + b.width);
+  const row = rows.value.find(r => cy >= r.y - config.stageGap / 2 && cy <= r.y + r.height + config.stageGap / 2);
+  if (!band || !row) return null;
+  return { lane: band.id as SectionLane, stage: row.stage };
+}
+function computeDrop(cx: number, cy: number, dragId: string) {
+  const hit = cellHit(cx, cy); if (!hit) return null;
+  let parentGroupId: string | undefined; let bestDepth = -1; let parentRect: any = null;
+  for (const g of groupRects.value) {
+    const grp = groupById.value[g.id];
+    if (!grp || grp.lane !== hit.lane || grp.stage !== hit.stage) continue;
+    if (cx >= g.x && cx <= g.x + g.width && cy >= g.y && cy <= g.y + g.height && g.depth > bestDepth) {
+      bestDepth = g.depth; parentGroupId = g.id; parentRect = g;
+    }
+  }
+  const sibs = [
+    ...course.state.nodes.filter(x => x.id !== dragId && x.lane === hit.lane && x.stage === hit.stage && x.parentGroupId === parentGroupId),
+    ...course.state.groups.filter(g => g.lane === hit.lane && g.stage === hit.stage && g.parentGroupId === parentGroupId),
+  ].map(s => {
+    const pl = placements.value[s.id]; const gr = groupRects.value.find(r => r.id === s.id);
+    return { id: s.id, yc: pl ? pl.y + pl.height / 2 : gr ? gr.y + 16 : 0 };
+  }).sort((a, b) => a.yc - b.yc);
+  const index = sibs.filter(s => s.yc < cy).length;
+  const row = rows.value.find(r => r.stage === hit.stage)!;
+  const lineY = !sibs.length ? (parentRect ? parentRect.y + 30 : row.y + 14)
+    : index === 0 ? sibs[0].yc - 26 : sibs[index - 1].yc + 24;
+  return { lane: hit.lane, stage: hit.stage, parentGroupId, index, lineY };
+}
+function nodeCenter(node: any) {
+  const w = node.dimensions?.width ?? 200, h = node.dimensions?.height ?? 80;
+  return { cx: node.position.x + w / 2, cy: node.position.y + h / 2 };
+}
+function onDragStart(e: any) { draggingId.value = e?.node?.id ?? null; hovered.value = null; }
+function onDrag(e: any) {
+  if (!draggingId.value || !e?.node) return;
+  const { cx, cy } = nodeCenter(e.node);
+  dropHint.value = computeDrop(cx, cy, draggingId.value);
+}
+function onDragStop(e: any) {
+  const id = draggingId.value;
+  if (id && e?.node) {
+    const { cx, cy } = nodeCenter(e.node);
+    const t = computeDrop(cx, cy, id);
+    if (t) course.dropNode(id, { lane: t.lane, stage: t.stage, parentGroupId: t.parentGroupId, index: t.index });
+    else schedule(items.value as any, groupsForLayout.value as any, Array.from(collapsed.value)); // snap back
+  }
+  draggingId.value = null; dropHint.value = null;
+}
+
 function onConnect(c: any) {
   const tgt = course.getNode(c.target);
   const kind = tgt && tgt.kind === 'section' ? tgt.lane : 'branch';
@@ -249,6 +346,24 @@ function onNodesChange(changes: any[]) {
 const overlayStyle = computed(() => {
   const v = viewport.value;
   return { transform: `translate(${v?.x ?? 0}px, ${v?.y ?? 0}px) scale(${v?.zoom ?? 1})`, transformOrigin: '0 0' };
+});
+const dropCellStyle = computed(() => {
+  const d = dropHint.value; if (!d) return {};
+  if (d.parentGroupId) {
+    const g = groupRects.value.find(r => r.id === d.parentGroupId);
+    if (g) return { left: g.x + 'px', top: g.y + 'px', width: g.width + 'px', height: g.height + 'px' };
+  }
+  const band = bands.value.find(b => b.id === d.lane);
+  const row = rows.value.find(r => r.stage === d.stage);
+  if (!band || !row) return {};
+  return { left: band.x + 'px', top: row.y + 'px', width: band.width + 'px', height: row.height + 'px' };
+});
+const dropLineStyle = computed(() => {
+  const d = dropHint.value; if (!d) return {};
+  const band = bands.value.find(b => b.id === d.lane); if (!band) return {};
+  let x = band.x + 10, w = band.width - 20;
+  if (d.parentGroupId) { const g = groupRects.value.find(r => r.id === d.parentGroupId); if (g) { x = g.x + 8; w = g.width - 16; } }
+  return { left: x + 'px', top: d.lineY + 'px', width: w + 'px' };
 });
 function bandStyle(band: any) {
   const top = (result.value?.contentTop ?? 84) - 14;
@@ -311,6 +426,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .btn { padding: 6px 11px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #d6dbe5; background: #fff; color: #374151; }
 .btn:hover:not(:disabled) { background: #f3f4f6; } .btn:disabled { opacity: .4; cursor: default; }
 .btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+.btn.on { background: #eef2ff; border-color: #818cf8; color: #4338ca; }
 
 .body { flex: 1; display: flex; min-height: 0; }
 .canvas { flex: 1; position: relative; overflow: hidden; }
@@ -323,6 +439,29 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .band { position: absolute; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   transition: left .32s cubic-bezier(.22,1,.36,1), width .32s cubic-bezier(.22,1,.36,1); }
 .band.collapsed { background: #f8fafc !important; border-style: dashed; }
+
+/* cell-tree group containers */
+.cgroup { position: absolute; border-radius: 12px; pointer-events: none;
+  transition: left .3s cubic-bezier(.22,1,.36,1), top .3s cubic-bezier(.22,1,.36,1), width .3s, height .3s; }
+.cg-one-of { border: 1.5px dashed #a5b4fc; background: rgba(99,102,241,.045); }
+.cg-all { border: 1.5px solid #d6dde6; background: rgba(100,116,139,.04); }
+.cgroup.selected { box-shadow: 0 0 0 2px #6366f1; }
+.cg-head { position: absolute; top: 0; left: 0; right: 0; height: 26px; pointer-events: auto; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; padding: 0 8px; font-size: 11px; }
+.cg-ic { font-size: 12px; }
+.cg-one-of .cg-ic { color: #6366f1; } .cg-all .cg-ic { color: #64748b; }
+.cg-lbl { font-weight: 700; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+.cg-mode { font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.cg-add { margin-left: auto; border: none; background: rgba(99,102,241,.12); color: #6366f1; width: 19px; height: 19px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; flex: 0 0 auto; }
+.cg-add:hover { background: rgba(99,102,241,.22); }
+
+/* drag-and-drop target indicator */
+.drop-cell { position: absolute; border: 2px dashed #6366f1; background: rgba(99,102,241,.07); border-radius: 12px; pointer-events: none; z-index: 2; }
+.drop-line { position: absolute; height: 3px; background: #6366f1; border-radius: 2px; pointer-events: none; z-index: 3; box-shadow: 0 0 0 3px rgba(99,102,241,.18); }
+.flow.dragging :deep(.vue-flow__node) { transition: none !important; }
+.flow.dragging :deep(.vue-flow__node.dragging) { z-index: 10000 !important; filter: drop-shadow(0 12px 24px rgba(16,24,40,.28)); }
+.flow :deep(.vue-flow__node) .sec, .flow :deep(.vue-flow__node) .dec { cursor: grab; }
+.flow.dragging :deep(.vue-flow__node.dragging) .sec, .flow.dragging :deep(.vue-flow__node.dragging) .dec { cursor: grabbing; }
 .rail { position: absolute; top: 16px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .ri { font-size: 15px; } .rt { writing-mode: vertical-rl; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
 .rowsep { position: absolute; left: 0; height: 1px; background: repeating-linear-gradient(to right, #e2e8f0 0 6px, transparent 6px 12px); }
@@ -347,6 +486,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .info { display: flex; align-items: center; gap: 18px; padding: 7px 18px; background: #fff; border-top: 1px solid #e7eaf0; font-size: 12px; color: #475467; }
 .info b { color: #111827; } .info .muted { margin-left: auto; color: #98a2b3; }
 .pdot { font-size: 11px; color: #94a3b8; } .pdot.busy { color: #2563eb; }
+
+/* live sense-check chip */
+.sensecheck { position: absolute; right: 14px; bottom: 14px; z-index: 16; }
+.sc-toggle { border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(16,24,40,.1); }
+.sensecheck.warn .sc-toggle { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.sensecheck.bad .sc-toggle { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.sc-list { position: absolute; right: 0; bottom: 40px; width: 264px; background: #fff; border: 1px solid #e7eaf0; border-radius: 12px; box-shadow: 0 12px 30px rgba(16,24,40,.16); padding: 6px; }
+.sc-item { font-size: 12px; padding: 7px 9px; border-radius: 8px; cursor: pointer; color: #475467; }
+.sc-item:hover { background: #f3f4f6; }
+.sc-item.error { color: #991b1b; font-weight: 600; } .sc-item.warn { color: #92400e; }
 </style>
 
 <style>

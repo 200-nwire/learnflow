@@ -1,5 +1,5 @@
 <template>
-  <aside class="insp" :class="{ open: !!(node || link) }">
+  <aside class="insp" :class="{ open: !!(node || link || group) }">
     <div v-if="node" class="panel">
       <header>
         <span class="kind" :style="{ color: accentFor(node) }">{{ node.kind === 'decision' ? '◆ Decision' : '▦ Section' }}</span>
@@ -26,6 +26,7 @@
           <label>Show when (entry rule)</label>
           <ConditionRow :model="node.entryRule" @update="r => course.setEntryRule(node!.id, r)" />
         </div>
+
       </template>
 
       <template v-else>
@@ -64,9 +65,28 @@
       <button class="del" @click="course.deleteLink(link.id)">Delete link</button>
     </div>
 
+    <div v-else-if="group" class="panel">
+      <header>
+        <span class="kind" style="color:#6366f1">{{ group.mode === 'one-of' ? '◇ Variant group' : '≡ Sequence group' }}</span>
+        <button class="x" @click="course.clearSelection()">✕</button>
+      </header>
+      <label>Label</label>
+      <input :value="group.label" @input="course.updateGroup(group!.id, { label: ($event.target as HTMLInputElement).value })" />
+      <label>Mode</label>
+      <div class="seg">
+        <button :class="{ on: group.mode === 'one-of' }" @click="course.updateGroup(group!.id, { mode: 'one-of' })">◇ One-of</button>
+        <button :class="{ on: group.mode === 'all' }" @click="course.updateGroup(group!.id, { mode: 'all' })">≡ All</button>
+      </div>
+      <p class="muted">{{ group.mode === 'one-of'
+        ? 'The learner profile picks the FIRST matching variant (by order).'
+        : 'Every child is shown, in order (a sequence).' }}</p>
+      <button class="add2" @click="course.addSectionToGroup(group!.id)">＋ Add section to group</button>
+      <button class="del" @click="course.deleteGroup(group!.id)">Ungroup</button>
+    </div>
+
     <div v-else class="empty">
-      <p>Select a section, decision, or link to edit it.</p>
-      <p class="muted">Tip: drag from a node’s handle to another to create a link, then add a condition here.</p>
+      <p>Select a section, decision, link, or group to edit it.</p>
+      <p class="muted">Tip: drag from a node’s handle to another to create a link. Use a section’s “Cell grouping” to make variants or a sequence.</p>
     </div>
   </aside>
 </template>
@@ -82,6 +102,7 @@ const course = useCourse();
 const { skills } = useLearner();
 const node = computed(() => course.selectedNode.value as CourseNode | undefined);
 const link = computed(() => course.selectedLink.value);
+const group = computed(() => course.selectedGroup.value);
 
 const accentFor = (n: CourseNode) => n.kind === 'section' ? LANES[n.lane].accent : '#6366f1';
 const set = (k: string, v: any) => node.value && course.updateNode(node.value.id, { [k]: v } as any);
@@ -164,6 +185,12 @@ input[type=checkbox] { width: auto; }
 .rule-block { margin-top: 6px; padding: 10px; background: #faf9ff; border: 1px solid #ede9fe; border-radius: 10px; }
 .del { margin-top: 16px; width: 100%; border: 1px solid #fecaca; color: #b91c1c; background: #fff; border-radius: 8px; padding: 8px; font-weight: 600; cursor: pointer; }
 .del:hover { background: #fef2f2; }
+.seg { display: flex; gap: 6px; margin-top: 4px; }
+.seg button { flex: 1; padding: 6px 4px; border: 1px solid #d6dbe5; background: #fff; border-radius: 7px; font-size: 11.5px; cursor: pointer; color: #475467; }
+.seg button.on { background: #eef2ff; border-color: #818cf8; color: #4338ca; font-weight: 600; }
+.seg button:hover { background: #f3f4f6; }
+.add2 { width: 100%; margin-top: 8px; border: 1px solid #c7d2fe; background: #eef2ff; color: #4338ca; border-radius: 8px; padding: 7px; font-weight: 600; cursor: pointer; }
+.add2:hover { background: #e0e7ff; }
 :deep(.cond-row) { display: flex; gap: 6px; margin-top: 8px; }
 :deep(.cond-row select), :deep(.cond-row input) { padding: 5px 7px; font-size: 12px; }
 </style>

@@ -10,6 +10,9 @@
     <div class="stripe" />
     <div class="body">
       <div class="head">
+        <span v-if="data.groupMode === 'one-of'" class="vdot" :class="{ on: isEligible }"
+          :title="isEligible ? 'active variant' : 'inactive variant'" />
+        <span v-else-if="data.groupMode === 'all'" class="seq">{{ data.seq }}</span>
         <span class="ic">{{ data.isStart ? '▶' : data.isEnd ? '■' : icon }}</span>
         <span class="title">{{ data.label }}</span>
         <span v-if="data.isStart" class="pill start">Start</span>
@@ -44,6 +47,7 @@ import type { ActivePath } from '../model/rules';
 const props = defineProps<{ data: {
   lane: SectionLane; label: string; description?: string; pages?: number;
   isStart?: boolean; isEnd?: boolean; optional?: boolean; rule?: string;
+  groupMode?: 'one-of' | 'all'; seq?: number;
 }; nodeId: string }>();
 
 const active = inject<Ref<ActivePath> | null>('active', null);
@@ -77,6 +81,9 @@ const isDim = computed(() => {
 .stripe { width: 5px; background: var(--accent); flex: 0 0 5px; }
 .body { padding: 9px 11px; flex: 1; min-width: 0; }
 .head { display: flex; align-items: center; gap: 6px; }
+.vdot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--accent); flex: 0 0 auto; box-sizing: border-box; }
+.vdot.on { background: var(--accent); }
+.seq { width: 17px; height: 17px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 16%, white); color: var(--accent); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 .ic { font-size: 14px; }
 .title { font-weight: 650; font-size: 13px; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
 .pill { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 6px; border-radius: 999px; }

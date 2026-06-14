@@ -66,6 +66,10 @@ export interface BaseNode {
   kind: NodeKind;
   lane: SectionLane;
   stage: number;
+  /** containing group inside the cell (undefined ⇒ direct cell child) */
+  parentGroupId?: string;
+  /** ordering among siblings in the same group/cell */
+  order?: number;
   width?: number;
   height?: number;
 }
@@ -104,10 +108,26 @@ export interface Link {
   order?: number;
 }
 
+/* ── Cell trees: groups of sections (variations / sequences) ───────────────*/
+export type GroupMode =
+  | 'one-of'   // learner profile / rules pick ONE child (variants)
+  | 'all';     // every child is shown, in order (sequence)
+
+export interface Group {
+  id: string;
+  lane: SectionLane;
+  stage: number;
+  mode: GroupMode;
+  parentGroupId?: string;   // nested group (undefined ⇒ direct cell child)
+  order: number;
+  label?: string;
+}
+
 export interface Course {
   title?: string;
   nodes: CourseNode[];
   links: Link[];
+  groups: Group[];
   /** seed/default learner profile for the simulator */
   profile?: Partial<LearnerProfile>;
   /** skills catalog (for mastery sliders) */

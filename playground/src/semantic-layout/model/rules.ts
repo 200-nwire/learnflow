@@ -5,7 +5,7 @@
  */
 import {
   type Condition, type Comparison, type Field, type LearnerProfile,
-  type Course, type CourseNode, type Link, isSection,
+  type Course, type CourseNode, type Link, type GroupMode, isSection,
 } from './types';
 
 /* ── field resolution ─────────────────────────────────────────────────────*/
@@ -65,17 +65,53 @@ export interface ActivePath {
   eligible: Set<string>;   // entryRule passes (independent of reach)
 }
 
+/* ── cell-tree selection: which sections are "shown" given group modes ─────*/
+interface SelNode { id: string; isGroup: boolean; mode?: GroupMode; order: number; children: SelNode[]; node?: CourseNode; }
+
+/**
+ * Resolve every cell's tree against the profile:
+ *  - 'all' groups show all showable children (in order)
+ *  - 'one-of' groups show the FIRST showable child (variants)
+ *  - a section is showable when its entryRule passes; a group when any child is
+ * Returns the set of section/decision ids that are actually shown.
+ */
+export function resolveCellSelection(course: Course, p: LearnerProfile): Set<string> {
+  const gnode: Record<string, SelNode> = {};
+  for (const g of course.groups) gnode[g.id] = { id: g.id, isGroup: true, mode: g.mode, order: g.order ?? 0, children: [] };
+  const roots: SelNode[] = [];
+  for (const g of course.groups) {
+    const n = gnode[g.id];
+    (g.parentGroupId && gnode[g.parentGroupId] ? gnode[g.parentGroupId].children : roots).push(n);
+  }
+  for (const cn of course.nodes) {
+    const n: SelNode = { id: cn.id, isGroup: false, order: cn.order ?? 0, children: [], node: cn };
+    (cn.parentGroupId && gnode[cn.parentGroupId] ? gnode[cn.parentGroupId].children : roots).push(n);
+  }
+  const sortRec = (ns: SelNode[]) => { ns.sort((a, b) => a.order - b.order); ns.forEach(x => sortRec(x.children)); };
+  sortRec(roots);
+
+  const showable = (n: SelNode): boolean =>
+    !n.isGroup ? (n.node && isSection(n.node) ? evaluate(n.node.entryRule, p) : true) : n.children.some(showable);
+
+  const selected = new Set<string>();
+  const collect = (n: SelNode) => {
+    if (!n.isGroup) { if (showable(n)) selected.add(n.id); return; }
+    if (n.mode === 'one-of') { const pick = n.children.find(showable); if (pick) collect(pick); }
+    else n.children.forEach(collect);
+  };
+  roots.forEach(collect);
+  return selected;
+}
+
 /**
  * Walk the course from its start nodes, honouring:
- *  - section entryRule (eligibility)
+ *  - section entryRule + cell-tree selection (eligibility)
  *  - guarded links (first-match-wins among siblings sharing a source)
  *  - decision nodes route purely via their guarded outgoing links
  */
 export function deriveActivePath(course: Course, p: LearnerProfile): ActivePath {
   const byId = new Map(course.nodes.map(n => [n.id, n]));
-  const eligible = new Set<string>(
-    course.nodes.filter(n => !isSection(n) || evaluate(n.entryRule, p)).map(n => n.id),
-  );
+  const eligible = resolveCellSelection(course, p);
 
   const outBySource = new Map<string, Link[]>();
   for (const l of course.links) {
@@ -96,21 +132,10 @@ export function deriveActivePath(course: Course, p: LearnerProfile): ActivePath 
     if (!node) return;
     if (eligible.has(id) && isSection(node)) sections.add(id);
 
-    const outs = (outBySource.get(id) ?? []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-    // partition: guarded (conditional) vs plain (always/default)
-    const guarded = outs.filter(l => l.guard && l.guard.type !== 'always');
-    const plain = outs.filter(l => !l.guard || l.guard.type === 'always');
-
-    // first guarded whose condition passes wins its "branch group"
-    const firstPass = guarded.find(l => evaluate(l.guard, p));
-    const taken: Link[] = [];
-    if (firstPass) taken.push(firstPass);
-    // plain links always fire (core progression / unconditional enrichment)
-    taken.push(...plain);
-    // if no guarded passed and there were guards, the plain ones act as 'else'
-
-    for (const l of taken) {
+    // gravity model: every outgoing link whose guard passes fires independently
+    // (an unguarded link is always taken — e.g. the core spine)
+    for (const l of outBySource.get(id) ?? []) {
+      if (!evaluate(l.guard, p)) continue;
       const targetNode = byId.get(l.target);
       if (!targetNode) continue;
       if (isSection(targetNode) && !eligible.has(l.target)) continue; // ineligible target blocks
