@@ -6,11 +6,7 @@ settings:
 
 importers:
 
-  .:
-    dependencies:
-      '@amit/adaptivity':
-        specifier: link:packages/adaptivity
-        version: link:packages/adaptivity
+  .: {}
 
   packages/chatbot:
     dependencies:
@@ -318,9 +314,6 @@ importers:
 
   storybook:
     dependencies:
-      _comment_adaptivity:
-        specifier: '@amit/adaptivity temporarily disabled - workspace:*'
-        version: link:@amit/adaptivity temporarily disabled - workspace:*
       primeicons:
         specifier: ^7.0.0
         version: 7.0.0

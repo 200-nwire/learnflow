@@ -8,7 +8,5 @@
     "dev:play": "pnpm -C playground dev",
     "dev:storybook": "pnpm -C storybook storybook"
   },
-  "dependencies": {
-    "@amit/adaptivity": "link:packages\\adaptivity"
-  }
+  "dependencies": {}
 }
