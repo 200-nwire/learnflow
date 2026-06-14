@@ -44,12 +44,14 @@
           :node-types="nodeTypes"
           :edge-types="edgeTypes"
           :nodes-draggable="mode === 'grid'"
-          :nodes-connectable="false"
+          :nodes-connectable="true"
+          :edges-updatable="true"
           :default-viewport="{ zoom: 0.82, x: 0, y: 0 }"
           :min-zoom="0.2" :max-zoom="2.5"
           :class="['flow', { hovering: !!hovered, dragging: !!draggingId, 'edges-top': view.edgesTop }]"
           @nodes-change="onNodesChange"
           @connect="onConnect"
+          @edge-update="onEdgeUpdate"
           @edge-click="onEdgeClick"
           @pane-click="course.clearSelection()"
           @node-drag-start="onDragStart"
@@ -255,7 +257,7 @@ const baseEdges = computed(() => {
   const seen: Record<string, number> = {};
   return links.map(l => {
     const kind = l.kind ?? 'branch';
-    const color = kind === 'branch' ? '#6366f1' : LANES[kind as SectionLane]?.accent ?? '#94a3b8';
+    const color = l.manual ? '#0284c7' : kind === 'branch' ? '#6366f1' : LANES[kind as SectionLane]?.accent ?? '#94a3b8';
     const p = ports(l.source, l.target);
     const guarded = !!l.guard && l.guard.type !== 'always';
     const idx = seen[l.source] = (seen[l.source] ?? 0); seen[l.source] = idx + 1; // separate parallel siblings
@@ -348,9 +350,15 @@ function onDragStop(e: any) {
 }
 
 function onConnect(c: any) {
+  if (!c?.source || !c?.target) return;
   const tgt = course.getNode(c.target);
   const kind = tgt && tgt.kind === 'section' ? tgt.lane : 'branch';
-  course.addLink(c.source, c.target, kind as any);
+  course.addManualLink(c.source, c.target, kind as any);
+}
+function onEdgeUpdate(e: any) {
+  const conn = e?.connection ?? e;
+  if (!conn?.source || !conn?.target || !e?.edge?.id) return;
+  course.reconnectLink(e.edge.id, conn.source, conn.target);
 }
 function onEdgeClick(e: any) { course.selectLink(e.edge.id); }
 function toggleLane(id: SectionLane) {

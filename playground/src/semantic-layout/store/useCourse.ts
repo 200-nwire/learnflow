@@ -14,7 +14,17 @@ const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
 
 const state = reactive<Course>(clone(sampleCourse));
 /** Derive all connections from structure (gravity wiring) + enforce core Start/End. */
-function recomputeLinks() { ensureCoreStartEnd(state); state.links = autoWire(state); }
+function recomputeLinks() {
+  ensureCoreStartEnd(state);
+  const manual = state.links.filter(l => l.manual);
+  const supp = new Set(state.suppressed ?? []);
+  const manualPairs = new Set(manual.map(l => `${l.source}>${l.target}`));
+  const auto = autoWire(state).filter(l => {
+    const k = `${l.source}>${l.target}`;
+    return !supp.has(k) && !manualPairs.has(k);          // dropped or overridden by the user
+  });
+  state.links = [...auto, ...manual];
+}
 recomputeLinks(); // initial wiring
 
 const selectedNodeId = ref<string | null>(null);
@@ -27,7 +37,7 @@ const redoStack: string[] = [];
 const canUndo = computed(() => undoStack.length > 0);
 const canRedo = computed(() => redoStack.length > 0);
 
-const snapshot = () => JSON.stringify({ nodes: state.nodes, links: state.links, groups: state.groups });
+const snapshot = () => JSON.stringify({ nodes: state.nodes, links: state.links, groups: state.groups, suppressed: state.suppressed });
 function commit() {
   undoStack.push(snapshot());
   if (undoStack.length > 100) undoStack.shift();
@@ -38,6 +48,7 @@ function restore(s: string) {
   state.nodes = o.nodes;
   state.links = o.links;
   state.groups = o.groups ?? [];
+  state.suppressed = o.suppressed ?? [];
 }
 function undo() {
   if (!undoStack.length) return;
@@ -114,9 +125,36 @@ function updateLink(id: string, patch: Partial<Link>) {
   Object.assign(l, patch);
 }
 function deleteLink(id: string) {
+  const l = getLink(id);
   commit();
-  state.links = state.links.filter(l => l.id !== id);
+  if (l && !l.manual) state.suppressed = [...(state.suppressed ?? []), `${l.source}>${l.target}`]; // keep an auto link removed
+  state.links = state.links.filter(x => x.id !== id);
+  recomputeLinks();
   if (selectedLinkId.value === id) selectedLinkId.value = null;
+}
+/** Draw a new connection by hand (persists across auto re-wiring). */
+function addManualLink(source: string, target: string, kind: LinkKind = 'branch') {
+  if (source === target) return;
+  commit();
+  const key = `${source}>${target}`;
+  state.suppressed = (state.suppressed ?? []).filter(k => k !== key);
+  if (!state.links.some(l => l.source === source && l.target === target))
+    state.links.push({ id: `m:${key}`, source, target, kind, manual: true });
+  recomputeLinks();
+}
+/** Reconnect an edge endpoint; the result is a manual link, the old hop is dropped. */
+function reconnectLink(id: string, source: string, target: string) {
+  if (source === target) return;
+  const l = getLink(id);
+  if (!l) return;
+  commit();
+  if (!l.manual) state.suppressed = [...(state.suppressed ?? []), `${l.source}>${l.target}`];
+  state.links = state.links.filter(x => x.id !== id);
+  const key = `${source}>${target}`;
+  state.suppressed = (state.suppressed ?? []).filter(k => k !== key);
+  if (!state.links.some(x => x.source === source && x.target === target))
+    state.links.push({ id: `m:${key}`, source, target, kind: l.kind ?? 'branch', guard: l.guard, label: l.label, manual: true });
+  recomputeLinks();
 }
 
 /* ── group / cell-tree commands ──────────────────────────────────────────────*/
@@ -202,7 +240,7 @@ export function useCourse() {
     selectedNodeId, selectedLinkId, selectedGroupId, selectedNode, selectedLink, selectedGroup,
     getNode, getLink, getGroup,
     addSection, addDecision, updateNode, moveNode, setEntryRule, deleteNode,
-    addLink, updateLink, deleteLink,
+    addLink, updateLink, deleteLink, addManualLink, reconnectLink,
     addGroup, updateGroup, deleteGroup, setNodeGroup, wrapInGroup, addSectionToGroup, dropNode,
     select, selectLink, selectGroup, clearSelection,
     undo, redo, canUndo, canRedo,

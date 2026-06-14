@@ -106,6 +106,8 @@ export interface Link {
   label?: string;           // author label, e.g. "score < 70"
   /** ordering among sibling guarded links sharing a source (first match wins) */
   order?: number;
+  /** user-drawn link — preserved across auto re-wiring */
+  manual?: boolean;
 }
 
 /* ── Cell trees: groups of sections (variations / sequences) ───────────────*/
@@ -128,6 +130,8 @@ export interface Course {
   nodes: CourseNode[];
   links: Link[];
   groups: Group[];
+  /** auto links the user removed/overrode, keyed "source>target" */
+  suppressed?: string[];
   /** seed/default learner profile for the simulator */
   profile?: Partial<LearnerProfile>;
   /** skills catalog (for mastery sliders) */
